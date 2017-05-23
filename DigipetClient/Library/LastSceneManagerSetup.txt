@@ -1,4 +1,4 @@
 sceneSetups:
-- path: Assets/Scenes/AugmentedMapScene.unity
+- path: Assets/Scenes/NewGameScene.unity
   isLoaded: 1
   isActive: 1

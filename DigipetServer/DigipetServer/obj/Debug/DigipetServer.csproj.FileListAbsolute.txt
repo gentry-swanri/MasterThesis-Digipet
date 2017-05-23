@@ -8,3 +8,6 @@ D:\MasterData\MasterThesis\DigipetServer\DigipetServer\obj\Debug\DigipetServer.e
 D:\MasterData\MasterThesis\DigipetServer\DigipetServer\obj\Debug\DigipetServer.pdb
 D:\MasterData\MasterThesis\DigipetServer\DigipetServer\bin\Debug\Newtonsoft.Json.dll
 D:\MasterData\MasterThesis\DigipetServer\DigipetServer\bin\Debug\Newtonsoft.Json.xml
+D:\MasterData\MasterThesis-Digipet\DigipetServer\DigipetServer\bin\Debug\DigipetServer.exe.config
+D:\MasterData\MasterThesis-Digipet\DigipetServer\DigipetServer\obj\Debug\DigipetServer.exe
+D:\MasterData\MasterThesis-Digipet\DigipetServer\DigipetServer\obj\Debug\DigipetServer.pdb

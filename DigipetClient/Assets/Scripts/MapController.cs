@@ -5,6 +5,8 @@ using System;
 using System.IO;
 using CymaticLabs.Unity3D.Amqp;
 
+using UnityEditor;
+
 public class MapController : MonoBehaviour {
 
     // request properties section
@@ -38,7 +40,7 @@ public class MapController : MonoBehaviour {
 
         this.InitDefaultProperties();
         //this.StartGPS();
-        //this.StartConnection();
+        this.StartConnection();
     }
 	
 	// Update is called once per frame
@@ -48,7 +50,7 @@ public class MapController : MonoBehaviour {
             //Debug.Log(this.responseAcquiredAndProcessed);
             if (responseAcquiredAndProcessed)
             {
-                //this.UpdateGpsAndSendRequest();
+                this.UpdateGpsAndSendRequest();
             }           
 
             //serverConnected = false;
@@ -142,8 +144,8 @@ public class MapController : MonoBehaviour {
         //this.latitude -= 0.00001f;
         if (this.lastLatitude != this.latitude || this.lastLongitude != this.longitude)
         {
-            //Debug.Log(this.lastLatitude + " ------- " + this.latitude);
-            //Debug.Log(this.lastLongitude + " ------- " + this.longitude);
+            Debug.Log(this.lastLatitude + " ------- " + this.latitude);
+            Debug.Log(this.lastLongitude + " ------- " + this.longitude);
 
             this.lastLatitude = this.latitude;
             this.lastLongitude = this.longitude;
@@ -325,7 +327,7 @@ public class MapController : MonoBehaviour {
         mf.mesh = RevertNormals(m);
         m.RecalculateBounds();
         m.RecalculateNormals();
-        //MeshUtility.Optimize(m);
+        MeshUtility.Optimize(m);
     }
 
     // create road mesh
@@ -368,7 +370,7 @@ public class MapController : MonoBehaviour {
         //mf.mesh = RevertNormals(m);
         m.RecalculateBounds();
         m.RecalculateNormals();
-        //MeshUtility.Optimize(m);
+        MeshUtility.Optimize(m);
     }
 
     // show the name of building, road, and poi

@@ -21,6 +21,11 @@ public class StartGameScript : MonoBehaviour {
 
     void StartGameOnClick()
     {
-        SceneManager.LoadScene("AugmentedMapScene");
+        InputField ipUsername = GameObject.Find("UsernameInputField").GetComponent<InputField>();
+        DataControllerScript.dataController.username = ipUsername.text;
+        InputField ipPetname = GameObject.Find("PetNameInputField").GetComponent<InputField>();
+        DataControllerScript.dataController.petName = ipPetname.text;
+
+        SceneManager.LoadScene("HomeScene");
     }
 }

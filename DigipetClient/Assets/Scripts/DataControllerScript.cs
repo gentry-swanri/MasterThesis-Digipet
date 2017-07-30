@@ -40,6 +40,7 @@ public class DataControllerScript : MonoBehaviour {
         lastSave = DateTime.MinValue;
         age = 0;
         energy = 100;
+        hunger = 0;
         fun = 100;
         hygiene = 100;
         environment = 100;

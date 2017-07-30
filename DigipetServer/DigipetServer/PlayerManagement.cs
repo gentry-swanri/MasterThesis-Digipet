@@ -18,9 +18,13 @@ namespace DigipetServer
         private float playerPosY;
         private bool needCreateMap;
 
+        // contain list of player position around specific player
+        private List<UnityPlayerPosition> listPlayerPos;
+
         public PlayerManagement()
         {
             listPlayer = new List<Player>();
+            listPlayerPos = new List<UnityPlayerPosition>();
         }
 
         public dynamic AcquireMapData(dynamic data)
@@ -66,6 +70,42 @@ namespace DigipetServer
             {
                 currentPlayer.SetIsActive(false);
             }
+        }
+
+        public void PlayerRouting(dynamic data)
+        {
+            Player player = listPlayer.Find(x => x.GetPlayerName() == (string)data.playerName);
+            float latitude = (float)Convert.ToDouble(data.latitude);
+            float longitude = (float)Convert.ToDouble(data.longitude);
+
+            List<Coordinate> route = player.GetMapController().StartRoute(latitude, longitude, (string)data.destination);
+        }
+
+        public List<UnityPlayerPosition> GetOthersInRange(dynamic data, float range)
+        {
+            Player curPlayer = listPlayer.Find(x => x.GetPlayerName() == (string)data.playerName);
+            float[] curPlayerPos = GeoConverter.GeoCoorToMercatorProjection(curPlayer.GetLatitude(), curPlayer.GetLongitude());
+
+            listPlayerPos.Clear();
+            for (int i=0; i<listPlayer.Count; i++)
+            {
+                Player player = listPlayer.ElementAt<Player>(i);
+                if (player.GetPlayerName() != (string)data.playerName)
+                {
+                    float[] pos = GeoConverter.GeoCoorToMercatorProjection(curPlayer.GetLatitude(), curPlayer.GetLongitude());
+                    if (pos[0] < curPlayerPos[0] + range && pos[1] < curPlayerPos[1] + range)
+                    {
+                        UnityPlayerPosition playerInRange = new UnityPlayerPosition();
+                        playerInRange.playerName = player.GetPlayerName();
+                        playerInRange.posX = pos[0];
+                        playerInRange.posY = pos[1];
+
+                        listPlayerPos.Add(playerInRange);
+                    }
+                }
+            }
+
+            return listPlayerPos;
         }
 
         public float GetPlayerPosX()

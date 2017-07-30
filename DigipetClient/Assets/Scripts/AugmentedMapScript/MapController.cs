@@ -37,7 +37,7 @@ public class MapController : MonoBehaviour {
         mainCam = GameObject.FindGameObjectWithTag("MainCamera");
 
         //this.InitDefaultProperties();
-        //this.StartGPS();
+        //StartCoroutine(this.StartGPS());
         //this.StartConnection();
     }
 	
@@ -230,7 +230,8 @@ public class MapController : MonoBehaviour {
                         }
                     }
 
-                    this.mainCam.transform.position = new Vector3((float)msg["playerPosX"], 5.0f, (float)msg["playerPosY"]);
+                    Vector3 tempCamPos = this.mainCam.transform.position;
+                    this.mainCam.transform.position = new Vector3((float)msg["playerPosX"], tempCamPos.y, (float)msg["playerPosY"]);
                     this.responseAcquiredAndProcessed = true;
                 }
             }

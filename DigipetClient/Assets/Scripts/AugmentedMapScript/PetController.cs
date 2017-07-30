@@ -88,6 +88,9 @@ public class PetController : MonoBehaviour {
             timeBeforeRotate = -1;
             Destroy(col.gameObject);
 
+            DataControllerScript.dataController.AddEnergy(1.0f);
+            DataControllerScript.dataController.ReduceHunger(1.0f);
+
             //if (DataController.HUNGER < 100)
             //{
             //    DataController.HUNGER++;

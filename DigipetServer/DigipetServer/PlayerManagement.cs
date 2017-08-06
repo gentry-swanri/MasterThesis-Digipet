@@ -34,7 +34,7 @@ namespace DigipetServer
             bool registered = listPlayer.Exists(x => x.GetPlayerName() == (string)data.playerName);
             if (!registered)
             {
-                currentPlayer = new Player(data.playerName.ToString(), (float)Convert.ToDouble(data.latitude), (float)Convert.ToDouble(data.longitude), data.petName.ToString(), (float)Convert.ToDouble(data.petPosX), (float)Convert.ToDouble(data.petPosY));
+                currentPlayer = new Player(data.id.ToString(), data.playerName.ToString(), (float)Convert.ToDouble(data.latitude), (float)Convert.ToDouble(data.longitude), data.petName.ToString(), (float)Convert.ToDouble(data.petPosX), (float)Convert.ToDouble(data.petPosY));
                 listPlayer.Add(currentPlayer);
             }
             else
@@ -90,12 +90,13 @@ namespace DigipetServer
             for (int i=0; i<listPlayer.Count; i++)
             {
                 Player player = listPlayer.ElementAt<Player>(i);
-                if (player.GetPlayerName() != (string)data.playerName)
+                if (player.GetPlayerId() != (string)data.id)
                 {
                     float[] pos = GeoConverter.GeoCoorToMercatorProjection(curPlayer.GetLatitude(), curPlayer.GetLongitude());
                     if (pos[0] < curPlayerPos[0] + range && pos[1] < curPlayerPos[1] + range)
                     {
                         UnityPlayerPosition playerInRange = new UnityPlayerPosition();
+                        playerInRange.playerId = player.GetPlayerId();
                         playerInRange.playerName = player.GetPlayerName();
                         playerInRange.posX = pos[0];
                         playerInRange.posY = pos[1];

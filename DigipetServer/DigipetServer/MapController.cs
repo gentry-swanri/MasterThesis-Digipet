@@ -80,6 +80,7 @@ namespace DigipetServer
             string url = string.Format(mapzenUrl, "buildings,roads,pois", zoom.ToString(), tileX.ToString(), tileY.ToString(), format, mapzenApiKey);
             dynamic mapData = await this.ProcessMapData(url);
             
+            
             this.ConvertBuildingData(mapData.buildings);
             this.ConvertRoadData(mapData.roads);
             this.ConvertPOIData(mapData.pois);

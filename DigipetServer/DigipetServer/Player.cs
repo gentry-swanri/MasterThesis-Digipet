@@ -8,6 +8,7 @@ namespace DigipetServer
 {
     class Player
     {
+        private string playerId;
         private string playerName;
         private float latitude;
         private float longitude;
@@ -15,8 +16,9 @@ namespace DigipetServer
         private Pet pet;
         private bool isActive;
 
-        public Player(string playerName, float playerLatitude, float playerLongitude, string petName, float petPosX, float petPosY)
+        public Player(string playerId, string playerName, float playerLatitude, float playerLongitude, string petName, float petPosX, float petPosY)
         {
+            this.playerId = playerId;
             this.playerName = playerName;
             this.latitude = playerLatitude;
             this.longitude = playerLongitude;
@@ -40,6 +42,16 @@ namespace DigipetServer
             }
 
             return needToCreate;
+        }
+
+        public void SetPlayerId(string playerId)
+        {
+            this.playerId = playerId;
+        }
+
+        public string GetPlayerId()
+        {
+            return this.playerId;
         }
 
         public void SetPlayerName(string playerName)

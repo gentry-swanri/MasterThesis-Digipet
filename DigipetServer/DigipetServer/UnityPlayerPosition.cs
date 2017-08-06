@@ -9,6 +9,7 @@ namespace DigipetServer
     class UnityPlayerPosition
     {
 
+        public string playerId;
         public string playerName;
         public float posX;
         public float posY;

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System;
 using System.IO;
+using UnityEngine.UI;
 using CymaticLabs.Unity3D.Amqp;
 
 public class MapController : MonoBehaviour {
@@ -10,7 +11,10 @@ public class MapController : MonoBehaviour {
     // request properties section
     private string requestExchangeName;
     private string requestRoutingKey;
-    private AmqpExchangeTypes requestExchangeType;
+
+    private string responseExchangeName;
+    private string responseRoutingKey;
+    private AmqpExchangeTypes responseExchangeType;
 
     // checker properties for connection and response
     private bool serverConnected;
@@ -32,18 +36,24 @@ public class MapController : MonoBehaviour {
     private string filePath = "";
     private bool firstStart = false;
 
+    // game object for route button
+    private GameObject routeObject;
+
     // Use this for initialization
     void Start () {
         mainCam = GameObject.FindGameObjectWithTag("MainCamera");
 
-        //this.InitDefaultProperties();
+        routeObject = GameObject.Find("RouteButton");
+        routeObject.GetComponent<Button>().onClick.AddListener(StartRouting);
+
+        this.InitDefaultProperties();
         //StartCoroutine(this.StartGPS());
-        //this.StartConnection();
+        this.StartConnection();
     }
 	
 	// Update is called once per frame
 	void Update () {
-        /*
+        
         if (serverConnected)
         {
             //Debug.Log(this.responseAcquiredAndProcessed);
@@ -54,7 +64,7 @@ public class MapController : MonoBehaviour {
 
             //serverConnected = false;
         }
-        */
+        
 	}
 
     void OnApplicationPause()
@@ -121,9 +131,12 @@ public class MapController : MonoBehaviour {
     void StartConnection()
     {
         // initialize request properties
-        this.requestExchangeName = "DigipetExchange";
-        this.requestRoutingKey = "DigipetRoutingKey";
-        this.requestExchangeType = AmqpExchangeTypes.Direct;
+        this.requestExchangeName = "DigipetRequestExchange";
+        this.requestRoutingKey = "DigipetRequestRoutingKey";
+
+        this.responseExchangeName = "DigipetResponseExchange";
+        this.responseRoutingKey = "DigipetResponseRoutingKey";
+        this.responseExchangeType = AmqpExchangeTypes.Direct;
 
         // connect to rabbitmq server
         AmqpClient.Instance.ConnectOnStart = false;
@@ -158,12 +171,24 @@ public class MapController : MonoBehaviour {
             
     }
 
+    void StartRouting()
+    {
+        GameObject textObject = GameObject.Find("DestinationField");
+        string destination = textObject.GetComponent<InputField>().text;
+
+        string routeRequestJson = this.CreateRouteJsonMessage(5, destination);
+        AmqpClient.Publish(this.requestExchangeName, this.requestRoutingKey, routeRequestJson);
+    }
+
     // subscribe to rabbitmq exchange if connection is successful
     void HandleConnected(AmqpClient clientParam)
     {
         // subscribe to exchange for request purpose
-        var exchangeSubscription = new AmqpExchangeSubscription(requestExchangeName, requestExchangeType, requestRoutingKey, HandleExchangeMessageReceived);       
+        var exchangeSubscription = new AmqpExchangeSubscription(responseExchangeName, responseExchangeType, responseRoutingKey, HandleExchangeMessageReceived);       
         AmqpClient.Subscribe(exchangeSubscription);
+
+        // testing publish message to server
+        // AmqpClient.Publish(this.requestExchangeName, this.requestRoutingKey, "test");
 
         // set connect status to true
         this.serverConnected = true;
@@ -177,7 +202,8 @@ public class MapController : MonoBehaviour {
 
         if (msg != null)
         {
-            if ((int)msg["type"] == 2)
+            // create map
+            if ((int)msg["type"] == 1)
             {
                 if ((string)msg["id"] == this.uniqueId)
                 {
@@ -234,6 +260,21 @@ public class MapController : MonoBehaviour {
                     this.mainCam.transform.position = new Vector3((float)msg["playerPosX"], tempCamPos.y, (float)msg["playerPosY"]);
                     this.responseAcquiredAndProcessed = true;
                 }
+            }
+
+            // create route path
+            if ((int)msg["type"] == 5)
+            {
+                if ((string)msg["id"] == this.uniqueId)
+                {
+                    
+                }
+            }
+
+            // create or update pet for other player in range
+            if ((int)msg["type"] == 6)
+            {
+
             }
         }
 
@@ -461,6 +502,18 @@ public class MapController : MonoBehaviour {
         return JsonUtility.ToJson(requestJson);
     }
 
+    string CreateRouteJsonMessage(int type, string destination)
+    {
+        RouteRequestJson routeRequestJson = new RouteRequestJson();
+        routeRequestJson.id = this.uniqueId;
+        routeRequestJson.type = type;
+        routeRequestJson.latitude = this.latitude;
+        routeRequestJson.longitude = this.longitude;
+        routeRequestJson.destination = destination;
+
+        return JsonUtility.ToJson(routeRequestJson);
+    }
+
     //void WriteFile(string msg)
     //{
     //    if (Application.platform == RuntimePlatform.Android || Application.platform == RuntimePlatform.IPhonePlayer)
@@ -534,5 +587,15 @@ public class MapController : MonoBehaviour {
 
         // position of pet in unity y coordinate       
         public float petPosY;       
+    }
+
+    [Serializable]
+    public class RouteRequestJson
+    {
+        public string id;
+        public int type;
+        public float latitude;
+        public float longitude;
+        public string destination;
     }
 }

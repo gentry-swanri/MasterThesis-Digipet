@@ -24,26 +24,33 @@ namespace DigipetServer
             using (var channel = connection.CreateModel())
             {
                 // create if not exist and bind exchange and queue for request and response
-                channel.ExchangeDeclare(exchange: "DigipetExchange",
+                channel.ExchangeDeclare(exchange: "DigipetRequestExchange",
                                         type: "direct",
                                         durable: true);
 
+                channel.ExchangeDeclare(exchange: "DigipetResponseExchange",
+                                        type: "direct",
+                                        durable: true);
+
+                /*
                 channel.QueueDeclare(queue: "DigipetQueue",
                                      durable: true,
                                      exclusive: false,
                                      autoDelete: false);
+                */
 
-                channel.QueueBind(queue: "DigipetQueue",
-                                  exchange: "DigipetExchange",
-                                  routingKey: "DigipetRoutingKey");
+                var queueName = channel.QueueDeclare().QueueName;
+
+                channel.QueueBind(queue: queueName,
+                                  exchange: "DigipetRequestExchange",
+                                  routingKey: "DigipetRequestRoutingKey");
+
+                // send position 
 
                 Console.WriteLine(" [*] Waiting for messages.");
 
                 // create consumer and tell consumer to waiting request from requestQueue
                 var consumer = new EventingBasicConsumer(channel);
-                channel.BasicConsume(queue: "DigipetQueue",
-                                     noAck: false,
-                                     consumer: consumer);
 
                 consumer.Received += (model, ea) =>
                 {
@@ -52,7 +59,8 @@ namespace DigipetServer
                     var message = Encoding.UTF8.GetString(body);
 
                     // process request
-                    //Console.WriteLine(" [x] {0}", message);
+                    Console.WriteLine(" [x] {0}", message);
+                    
                     dynamic msg = JsonConvert.DeserializeObject(message);
                     if (msg != null)
                     {
@@ -62,7 +70,7 @@ namespace DigipetServer
 
                             ResponseJson responseJson = new ResponseJson();
                             responseJson.id = msg["id"];
-                            responseJson.type = 2;
+                            responseJson.type = 1;
                             responseJson.mapData = playerManagement.AcquireMapData(msg);
                             responseJson.needCreateMap = playerManagement.GetNeedCreateMap();
                             responseJson.playerName = msg["playerName"];
@@ -75,18 +83,18 @@ namespace DigipetServer
                             Console.WriteLine(" [x] sending map response to {0} ", msg["id"]);
 
                             var newMessage = Encoding.UTF8.GetBytes(jsonString);
-                            channel.BasicPublish(exchange: "DigipetExchange",
-                                                 routingKey: "DigipetRoutingKey",
+                            channel.BasicPublish(exchange: "DigipetResponseExchange",
+                                                 routingKey: "DigipetResponseRoutingKey",
                                                  basicProperties: null,
                                                  body: newMessage);
                         }
 
-                        if (msg["type"] == 3)
+                        if (msg["type"] == 2)
                         {
                             playerManagement.SetPlayerActive(msg);
                         }
 
-                        if (msg["type"] == 4)
+                        if (msg["type"] == 3)
                         {
                             Console.WriteLine(" [x] processing route request from {0} ", msg["id"]);
 
@@ -94,7 +102,7 @@ namespace DigipetServer
 
                             RouteResponseJson routeResponseJson = new RouteResponseJson();
                             routeResponseJson.route = route;
-                            routeResponseJson.type = 5;
+                            routeResponseJson.type = 3;
                             routeResponseJson.id = msg["id"];
 
                             var jsonString = JsonConvert.SerializeObject(routeResponseJson);
@@ -103,13 +111,13 @@ namespace DigipetServer
                             Console.WriteLine(" [x] sending route response to {0} ", msg["id"]);
 
                             var newMessage = Encoding.UTF8.GetBytes(jsonString);
-                            channel.BasicPublish(exchange: "DigipetExchange",
-                                                 routingKey: "DigipetRoutingKey",
+                            channel.BasicPublish(exchange: "DigipetResponseExchange",
+                                                 routingKey: "DigipetResponseRoutingKey",
                                                  basicProperties: null,
                                                  body: newMessage);
                         }
 
-                        if (msg["type"] == 6)
+                        if (msg["type"] == 4)
                         {
                             Console.WriteLine(" [x] processing list player request from {0} ", msg["id"]);
 
@@ -117,7 +125,7 @@ namespace DigipetServer
 
                             ListPlayerResponseJson listPlayer = new ListPlayerResponseJson();
                             listPlayer.unityPlayerPos = unityPlayerPos;
-                            listPlayer.type = 7;
+                            listPlayer.type = 4;
                             listPlayer.id = msg["id"];
 
                             var jsonString = JsonConvert.SerializeObject(listPlayer);
@@ -126,16 +134,21 @@ namespace DigipetServer
                             Console.WriteLine(" [x] sending list player response to {0} ", msg["id"]);
 
                             var newMessage = Encoding.UTF8.GetBytes(jsonString);
-                            channel.BasicPublish(exchange: "DigipetExchange",
-                                                 routingKey: "DigipetRoutingKey",
+                            channel.BasicPublish(exchange: "DigipetResponseExchange",
+                                                 routingKey: "DigipetResponseRoutingKey",
                                                  basicProperties: null,
                                                  body: newMessage);
 
                         }
                     }
+                    
 
                     channel.BasicAck(ea.DeliveryTag, false);
                 };
+
+                channel.BasicConsume(queue: queueName,
+                                     noAck: false,
+                                     consumer: consumer);
 
                 Console.WriteLine(" Press [enter] to stop server and exit.");
                 Console.ReadLine();

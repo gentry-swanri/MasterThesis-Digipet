@@ -59,7 +59,7 @@ namespace DigipetServer
                     var message = Encoding.UTF8.GetString(body);
 
                     // process request
-                    Console.WriteLine(" [x] {0}", message);
+                    Console.WriteLine(" [x] received request = {0}", message);
                     
                     dynamic msg = JsonConvert.DeserializeObject(message);
                     if (msg != null)
@@ -80,13 +80,13 @@ namespace DigipetServer
                             var jsonString = JsonConvert.SerializeObject(responseJson);
 
                             // send response
-                            Console.WriteLine(" [x] sending map response to {0} ", msg["id"]);
-
                             var newMessage = Encoding.UTF8.GetBytes(jsonString);
                             channel.BasicPublish(exchange: "DigipetResponseExchange",
                                                  routingKey: "DigipetResponseRoutingKey",
                                                  basicProperties: null,
                                                  body: newMessage);
+
+                            Console.WriteLine(" [x] map response sent to {0} ", msg["id"]);
                         }
 
                         if (msg["type"] == 2)
@@ -108,13 +108,13 @@ namespace DigipetServer
                             var jsonString = JsonConvert.SerializeObject(routeResponseJson);
 
                             // send response
-                            Console.WriteLine(" [x] sending route response to {0} ", msg["id"]);
-
                             var newMessage = Encoding.UTF8.GetBytes(jsonString);
                             channel.BasicPublish(exchange: "DigipetResponseExchange",
                                                  routingKey: "DigipetResponseRoutingKey",
                                                  basicProperties: null,
                                                  body: newMessage);
+
+                            Console.WriteLine(" [x] route response sent to {0} ", msg["id"]);
                         }
 
                         if (msg["type"] == 4)
@@ -170,14 +170,14 @@ namespace DigipetServer
         {
             public List<Coordinate> route;
             public int type;
-            public int id;
+            public string id;
         }
 
         class ListPlayerResponseJson
         {
             public List<UnityPlayerPosition> unityPlayerPos;
             public int type;
-            public int id;
+            public string id;
         }
     }
 }

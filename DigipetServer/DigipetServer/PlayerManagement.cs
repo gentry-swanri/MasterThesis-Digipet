@@ -39,7 +39,7 @@ namespace DigipetServer
             }
             else
             {
-                currentPlayer = listPlayer.Find(x => x.GetPlayerName() == (string)data.playerName);
+                currentPlayer = listPlayer.Find(x => x.GetPlayerId() == (string)data.id);
                 if (currentPlayer.GetIsActive() == false)
                 {
                     currentPlayer.SetIsActive(true);
@@ -72,13 +72,15 @@ namespace DigipetServer
             }
         }
 
-        public void PlayerRouting(dynamic data)
+        public List<Coordinate> PlayerRouting(dynamic data)
         {
-            Player player = listPlayer.Find(x => x.GetPlayerName() == (string)data.playerName);
+            Player player = listPlayer.Find(x => x.GetPlayerId() == (string)data.id);
             float latitude = (float)Convert.ToDouble(data.latitude);
             float longitude = (float)Convert.ToDouble(data.longitude);
 
             List<Coordinate> route = player.GetMapController().StartRoute(latitude, longitude, (string)data.destination);
+
+            return route;
         }
 
         public List<UnityPlayerPosition> GetOthersInRange(dynamic data, float range)

@@ -24,11 +24,13 @@ namespace DigipetServer
 
         private List<Coordinate> finalRoute;
 
-        public RouteManagement(float centerMercatorX, float centerMercatorY, float latitude, float longitude, string mapzenKey)
+        private bool routingDone;
+
+        public RouteManagement(float centerMercatorX, float centerMercatorY, float latitude, float longitude, string mapzenKey, HttpClient httpClient)
         {
-            this.httpClient = new HttpClient();
-            this.searchUrl = "https://search.mapzen.com/v1/search?text={0}&api_key={1}";
-            this.routeUrl = "https://valhalla.mapzen.com/route?json={0}&api_key={1}";
+            this.httpClient = httpClient;
+            this.searchUrl = "http://search.mapzen.com/v1/search?text={0}&api_key={1}";
+            this.routeUrl = "http://valhalla.mapzen.com/route?json={0}&api_key={1}";
             this.mapzenApiKey = mapzenKey;
             //this.mapzenApiKey = "mapzen-KhT9o6J";
 
@@ -38,24 +40,35 @@ namespace DigipetServer
             this.longitude = longitude;
 
             this.finalRoute = new List<Coordinate>();
+
+            this.routingDone = false;
         }
 
         public void StartRouting(string routeDestination)
         {
-            string shapeResult = this.SearchRoute(routeDestination);
+            this.SearchRoute(routeDestination);
         }
 
-        private string SearchRoute(string routeDestination)
+        private async void SearchRoute(string routeDestination)
         {
             string destUpdate = routeDestination.Replace(" ", "%20");
             string url = string.Format(searchUrl, destUpdate, mapzenApiKey);
-            dynamic searchData = this.ProcessData(url);
+            dynamic searchData = null;
+            try
+            {
+                searchData = await this.ProcessData(url);
+            }
+            catch (HttpRequestException e)
+            {
+                Console.WriteLine(e.InnerException.Message);
+            }
+            
             if (searchData.features != null)
             {
                 int pos = -1;
                 for (int i = 0; i < searchData.features.Count; i++)
                 {
-                    string name = searchData.features[i].properties.name.str;
+                    string name = (string)searchData.features[i].properties.name;
                     if (name.ToLower() == routeDestination.ToLower())
                     {
                         pos = i;
@@ -71,7 +84,7 @@ namespace DigipetServer
                     
                     string json = "{\"locations\":[{\"lat\":" + latitude + ",\"lon\":" + longitude + ",\"type\":\"break\"},{\"lat\":" + latitudeSearch + ",\"lon\":" + longitudeSearch + ",\"type\":\"break\"}],\"costing\":\"auto\"}";
                     string url2 = string.Format(routeUrl, json, mapzenApiKey);
-                    dynamic routeData = this.ProcessData(url2);
+                    dynamic routeData = await this.ProcessData(url2);
 
                     if (routeData.trip != null)
                     {
@@ -80,7 +93,7 @@ namespace DigipetServer
                 }
             }
 
-            return "";
+            this.routingDone = true;
         }
 
         private async Task<dynamic> ProcessData(string url)
@@ -94,7 +107,7 @@ namespace DigipetServer
 
         private void ProcessRouteData(dynamic routeData)
         {
-            string shape = routeData.trip.legs[0].shape.str;
+            string shape = (string)routeData.trip.legs[0].shape;
             shape = shape.Replace("\\\\", "\\"); // remove the escaped character '\'
 
             PolylineDecoder pd = new PolylineDecoder();
@@ -117,6 +130,11 @@ namespace DigipetServer
         public List<Coordinate> GetFinalRoute()
         {
             return this.finalRoute;
+        }
+
+        public bool GetRoutingDone()
+        {
+            return this.routingDone;
         }
 
     }

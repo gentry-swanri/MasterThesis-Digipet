@@ -164,8 +164,10 @@ namespace DigipetServer
 
         public List<Coordinate> StartRoute(float latitude, float longitude, string destination)
         {
-            RouteManagement route = new RouteManagement(this.centerMercatorX, this.centerMercatorY, latitude, longitude, this.mapzenApiKey);
+            RouteManagement route = new RouteManagement(this.centerMercatorX, this.centerMercatorY, latitude, longitude, this.mapzenApiKey, this.http);
             route.StartRouting(destination);
+
+            while (!route.GetRoutingDone()) ;
 
             return route.GetFinalRoute();
         }

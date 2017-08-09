@@ -163,6 +163,8 @@ public class MapController : MonoBehaviour {
             this.lastLatitude = this.latitude;
             this.lastLongitude = this.longitude;
 
+            Debug.Log("publish map");
+
             string requestJson = this.CreateJsonMessage(1);
             AmqpClient.Publish(this.requestExchangeName, this.requestRoutingKey, requestJson);
 
@@ -176,7 +178,7 @@ public class MapController : MonoBehaviour {
         GameObject textObject = GameObject.Find("DestinationField");
         string destination = textObject.GetComponent<InputField>().text;
 
-        string routeRequestJson = this.CreateRouteJsonMessage(5, destination);
+        string routeRequestJson = this.CreateRouteJsonMessage(3, destination);
         AmqpClient.Publish(this.requestExchangeName, this.requestRoutingKey, routeRequestJson);
     }
 
@@ -263,11 +265,12 @@ public class MapController : MonoBehaviour {
             }
 
             // create route path
-            if ((int)msg["type"] == 5)
+            if ((int)msg["type"] == 3)
             {
                 if ((string)msg["id"] == this.uniqueId)
                 {
-                    
+                    Debug.Log("CREATE ROUTE");
+                    CreateRoute(msg["route"]);
                 }
             }
 
@@ -279,6 +282,22 @@ public class MapController : MonoBehaviour {
         }
 
         //Debug.Log("Request Exchange Message : " + receivedJson);
+    }
+
+    void CreateRoute(CymaticLabs.Unity3D.Amqp.SimpleJSON.JSONNode routeData)
+    {
+        for (int i=0; i<routeData.Count-1; i++)
+        {
+            float startLat = (float)routeData[i]["latitude"];
+            float startLon = (float)routeData[i]["longitude"];
+            Vector3 start = new Vector3(startLat, 0.0f, startLon);
+
+            float endLat = (float)routeData[i+1]["latitude"];
+            float endLon = (float)routeData[i+1]["longitude"];
+            Vector3 end = new Vector3(endLat, 0.0f, endLon);
+
+            CreateRoadWaterMesh(start, end, 2.0f, "RouteObject", Color.green, "route");
+        }
     }
 
     // create building's mesh and name based on data from response

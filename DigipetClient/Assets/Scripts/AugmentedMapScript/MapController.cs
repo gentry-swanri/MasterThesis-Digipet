@@ -8,17 +8,8 @@ using CymaticLabs.Unity3D.Amqp;
 
 public class MapController : MonoBehaviour {
 
-    // request properties section
-    private string requestExchangeName;
-    private string requestRoutingKey;
-
-    private string responseExchangeName;
-    private string responseRoutingKey;
-    private AmqpExchangeTypes responseExchangeType;
-
     // checker properties for connection and response
-    private bool serverConnected;
-    private bool responseAcquiredAndProcessed;
+    private bool mapAcquiredAndProcessed;
 
     // class properties
     private string uniqueId;
@@ -32,8 +23,8 @@ public class MapController : MonoBehaviour {
     private float petPosY;
     private GameObject mainCam;
 
-    private string fileName = "MapData.txt";
-    private string filePath = "";
+    //private string fileName = "MapData.txt";
+    //private string filePath = "";
     private bool firstStart = false;
 
     // game object for route button
@@ -48,22 +39,19 @@ public class MapController : MonoBehaviour {
 
         this.InitDefaultProperties();
         //StartCoroutine(this.StartGPS());
-        this.StartConnection();
     }
 	
 	// Update is called once per frame
 	void Update () {
-        
-        if (serverConnected)
-        {
-            //Debug.Log(this.responseAcquiredAndProcessed);
-            if (responseAcquiredAndProcessed)
-            {
-                this.UpdateGpsAndSendRequest();
-            }           
 
-            //serverConnected = false;
+        //Debug.Log(this.responseAcquiredAndProcessed);
+        if (mapAcquiredAndProcessed)
+        {
+            this.UpdateGpsAndSendRequest();
         }
+        
+        CheckAndProcessResponse();
+                
         
 	}
 
@@ -77,17 +65,16 @@ public class MapController : MonoBehaviour {
     void InitDefaultProperties()
     {
         this.uniqueId = Guid.NewGuid().ToString();
-        this.playerName = "User";
+        this.playerName = DataControllerScript.dataController.username; //"User";
         this.latitude = -6.8899f;
         this.longitude = 107.61f;
         this.lastLatitude = float.MinValue;
         this.lastLongitude = float.MinValue;
-        this.petName = "Pet";
+        this.petName = DataControllerScript.dataController.petName; //"Pet";
         this.petPosX = 0f;
         this.petPosY = 0f;
 
-        this.serverConnected = false;
-        this.responseAcquiredAndProcessed = true;
+        this.mapAcquiredAndProcessed = true;
         this.firstStart = true;
     }
 
@@ -127,27 +114,6 @@ public class MapController : MonoBehaviour {
         }
     }
 
-    // start connection to rabbitmq server
-    void StartConnection()
-    {
-        // initialize request properties
-        this.requestExchangeName = "DigipetRequestExchange";
-        this.requestRoutingKey = "DigipetRequestRoutingKey";
-
-        this.responseExchangeName = "DigipetResponseExchange";
-        this.responseRoutingKey = "DigipetResponseRoutingKey";
-        this.responseExchangeType = AmqpExchangeTypes.Direct;
-
-        // connect to rabbitmq server
-        AmqpClient.Instance.ConnectOnStart = false;
-        AmqpClient.Connect();
-        
-        // handle event after connected to rabbitmq server
-        AmqpClient.Instance.OnConnected.AddListener(HandleConnected);
-
-        //Debug.Log("server has connected");
-    }
-
     // update latitude and longitude value and send the request to server through rabbitmq
     void UpdateGpsAndSendRequest()
     {
@@ -165,12 +131,11 @@ public class MapController : MonoBehaviour {
 
             Debug.Log("publish map");
 
-            string requestJson = this.CreateJsonMessage(1);
-            AmqpClient.Publish(this.requestExchangeName, this.requestRoutingKey, requestJson);
+            string requestJson = this.CreateJsonMessage("map");
+            AmqpClient.Publish(AmqpController.amqpControl.requestExchangeName, AmqpController.amqpControl.requestRoutingKey, requestJson);
 
-            this.responseAcquiredAndProcessed = false;
-        }
-            
+            this.mapAcquiredAndProcessed = false;
+        }    
     }
 
     void StartRouting()
@@ -178,24 +143,67 @@ public class MapController : MonoBehaviour {
         GameObject textObject = GameObject.Find("DestinationField");
         string destination = textObject.GetComponent<InputField>().text;
 
-        string routeRequestJson = this.CreateRouteJsonMessage(3, destination);
-        AmqpClient.Publish(this.requestExchangeName, this.requestRoutingKey, routeRequestJson);
+        string routeRequestJson = this.CreateRouteJsonMessage("route", destination);
+        AmqpClient.Publish(AmqpController.amqpControl.requestExchangeName, AmqpController.amqpControl.requestRoutingKey, routeRequestJson);
     }
 
-    // subscribe to rabbitmq exchange if connection is successful
-    void HandleConnected(AmqpClient clientParam)
+    void CheckAndProcessResponse()
     {
-        // subscribe to exchange for request purpose
-        var exchangeSubscription = new AmqpExchangeSubscription(responseExchangeName, responseExchangeType, responseRoutingKey, HandleExchangeMessageReceived);       
-        AmqpClient.Subscribe(exchangeSubscription);
+        var msg = AmqpController.amqpControl.msg;
+        if (msg != null) // check for msg
+        {
+            string id = (string)msg["id"];
+            if (id == this.uniqueId) // check for guid or unique id
+            {
+                string responseType = (string)msg["type"];
+                if (responseType == "map") // response for create map
+                {
+                    bool createNewMap = (bool)msg["needCreateMap"];
+                    if (createNewMap)
+                    {
+                        Debug.Log("CREATE MAP");
+                        this.DestroyGameObjectByTagName("MapObject");
 
-        // testing publish message to server
-        // AmqpClient.Publish(this.requestExchangeName, this.requestRoutingKey, "test");
+                        var buildingData = msg["mapData"]["listBuildingData"];
+                        this.CreateBuilding(buildingData);
+                        var roadData = msg["mapData"]["listRoadData"];
+                        this.CreateRoad(roadData);
+                    }else
+                    {
+                        if (firstStart)
+                        {
+                            Debug.Log("FIRST START CREATE MAP");
+                            this.DestroyGameObjectByTagName("MapObject");
 
-        // set connect status to true
-        this.serverConnected = true;
+                            var buildingData = msg["mapData"]["listBuildingData"];
+                            this.CreateBuilding(buildingData);
+                            var roadData = msg["mapData"]["listRoadData"];
+                            this.CreateRoad(roadData);
+
+                            firstStart = false;
+                        }
+                    }
+
+                    Vector3 tempCamPos = this.mainCam.transform.position;
+                    this.mainCam.transform.position = new Vector3((float)msg["playerPosX"], tempCamPos.y, (float)msg["playerPosY"]);
+                    this.mapAcquiredAndProcessed = true;
+
+                    AmqpController.amqpControl.msg = null;
+                }
+
+                if (responseType == "route") // response for create route
+                {
+                    Debug.Log("CREATE ROUTE");
+                    CreateRoute(msg["route"]);
+
+                    AmqpController.amqpControl.msg = null;
+                }
+            }
+        }
     }
 
+    
+    /*
     // received response from server and process it
     void HandleExchangeMessageReceived(AmqpExchangeReceivedMessage received)
     {
@@ -214,12 +222,19 @@ public class MapController : MonoBehaviour {
                         Debug.Log("CREATE MAP");
                         this.DestroyGameObjectByTagName("MapObject");
 
-                        var buildingData = msg["mapData"]["buildings"]["features"];
+                        // old json version
+                        //var buildingData = msg["mapData"]["buildings"]["features"];
+                        //this.CreateBuilding(buildingData);
+                        //var roadData = msg["mapData"]["roads"]["features"];
+                        //this.CreateRoad(roadData);
+                        //var poiData = msg["mapData"]["pois"]["features"];
+                        //this.CreatePOI(poiData);
+
+                        // new json version
+                        var buildingData = msg["mapData"]["listBuildingData"];
                         this.CreateBuilding(buildingData);
-                        var roadData = msg["mapData"]["roads"]["features"];
+                        var roadData = msg["mapData"]["listRoadData"];
                         this.CreateRoad(roadData);
-                        var poiData = msg["mapData"]["pois"]["features"];
-                        this.CreatePOI(poiData);
 
                         //this.WriteFile(receivedJson);
                     }
@@ -247,12 +262,18 @@ public class MapController : MonoBehaviour {
                             Debug.Log("CREATE MAP FIRST START");
                             this.DestroyGameObjectByTagName("MapObject");
 
-                            var buildingData = msg["mapData"]["buildings"]["features"];
+                            // old json version
+                            //var buildingData = msg["mapData"]["buildings"]["features"];
+                            //this.CreateBuilding(buildingData);
+                            //var roadData = msg["mapData"]["roads"]["features"];
+                            //this.CreateRoad(roadData);
+                            //var poiData = msg["mapData"]["pois"]["features"];
+                            //this.CreatePOI(poiData);
+
+                            var buildingData = msg["mapData"]["listBuildingData"];
                             this.CreateBuilding(buildingData);
-                            var roadData = msg["mapData"]["roads"]["features"];
+                            var roadData = msg["mapData"]["listRoadData"];
                             this.CreateRoad(roadData);
-                            var poiData = msg["mapData"]["pois"]["features"];
-                            this.CreatePOI(poiData);
 
                             this.firstStart = false;
                         }
@@ -283,6 +304,7 @@ public class MapController : MonoBehaviour {
 
         //Debug.Log("Request Exchange Message : " + receivedJson);
     }
+    */
 
     void CreateRoute(CymaticLabs.Unity3D.Amqp.SimpleJSON.JSONNode routeData)
     {
@@ -303,18 +325,55 @@ public class MapController : MonoBehaviour {
     // create building's mesh and name based on data from response
     void CreateBuilding(CymaticLabs.Unity3D.Amqp.SimpleJSON.JSONNode buildingData)
     {
+        // old create building version
+        //List<Vector3> point = new List<Vector3>();
+        //List<Vector2> point2d = new List<Vector2>();
+        //for (int i=0; i<buildingData.Count; i++)
+        //{
+        //    var tempData = buildingData[i];
+        //    if ((string)tempData["geometry"]["type"] == "Polygon")
+        //    {
+        //        for (int j=0; j<tempData["geometry"]["coordinates"][0].Count - 1; j++)
+        //        {
+        //            var coordinate = tempData["geometry"]["coordinates"][0][j];
+        //            point.Add(new Vector3((float)coordinate[1], 0.0f, (float)coordinate[0]));
+        //            point2d.Add(new Vector2((float)coordinate[0], (float)coordinate[1]));
+        //        }
+
+        //        this.CreatePolygon(point2d.ToArray(), point.ToArray(), Color.green, "MapObject", "building");
+
+        //        point.Clear();
+        //        point2d.Clear();
+        //    }
+        //    if ((string)tempData["geometry"]["type"] == "Point")
+        //    {
+        //        string buildingNames = (string)tempData["properties"]["name"];
+        //        var coordinate = tempData["geometry"]["coordinates"];
+        //        this.ShowName(new Vector3((float)coordinate[1], 0.0f, (float)coordinate[0]), new Vector3(), buildingNames, "MapObject", "buildingName", Color.black);
+        //    }
+        //}
+
+        // new create building version
         List<Vector3> point = new List<Vector3>();
         List<Vector2> point2d = new List<Vector2>();
         for (int i=0; i<buildingData.Count; i++)
         {
             var tempData = buildingData[i];
-            if ((string)tempData["geometry"]["type"] == "Polygon")
+            if (tempData["listCoordinate"].Count == 1)
             {
-                for (int j=0; j<tempData["geometry"]["coordinates"][0].Count - 1; j++)
+                string buildingName = (string)tempData["buildingName"];
+                var coordinate = tempData["listCoordinate"][0];
+                this.ShowName(new Vector3((float)coordinate["latitude"], 0.0f, (float)coordinate["longitude"]), new Vector3(), buildingName, "MapObject", "buildingName", Color.black);
+            }
+            else
+            {
+                for (int j = 0; j < tempData["listCoordinate"].Count-1; j++)
                 {
-                    var coordinate = tempData["geometry"]["coordinates"][0][j];
-                    point.Add(new Vector3((float)coordinate[1], 0.0f, (float)coordinate[0]));
-                    point2d.Add(new Vector2((float)coordinate[0], (float)coordinate[1]));
+                    var coordinate = tempData["listCoordinate"][j];
+                    float latitude = (float)coordinate["latitude"];
+                    float longitude = (float)coordinate["longitude"];
+                    point.Add(new Vector3(latitude, 0.0f, longitude));
+                    point2d.Add(new Vector2(latitude, longitude));
                 }
 
                 this.CreatePolygon(point2d.ToArray(), point.ToArray(), Color.green, "MapObject", "building");
@@ -322,35 +381,60 @@ public class MapController : MonoBehaviour {
                 point.Clear();
                 point2d.Clear();
             }
-            if ((string)tempData["geometry"]["type"] == "Point")
-            {
-                string buildingNames = (string)tempData["properties"]["name"];
-                var coordinate = tempData["geometry"]["coordinates"];
-                this.ShowName(new Vector3((float)coordinate[1], 0.0f, (float)coordinate[0]), new Vector3(), buildingNames, "MapObject", "buildingName", Color.black);
-            }
         }
     }
 
     // create road's mesh and name based on response 
     void CreateRoad(CymaticLabs.Unity3D.Amqp.SimpleJSON.JSONNode roadData)
     {
+        // old create road version
+        //List<Vector3[]> point = new List<Vector3[]>();
+        //List<string> names = new List<string>();
+        //for (int i=0; i<roadData.Count; i++)
+        //{
+        //    var tempData = roadData[i];
+        //    if ((string)tempData["geometry"]["type"] == "LineString")
+        //    {
+        //        Vector3[] perPoint = new Vector3[tempData["geometry"]["coordinates"].Count];
+        //        for (int j=0; j< tempData["geometry"]["coordinates"].Count; j++)
+        //        {
+        //            var coordinate = tempData["geometry"]["coordinates"][j];
+        //            perPoint[j] = new Vector3((float)coordinate[1], 0.1f, (float)coordinate[0]);
+        //        }
+
+        //        point.Add(perPoint);
+        //        names.Add((string)tempData["properties"]["name"]);
+        //    }
+        //}
+
+        //for (int k = 0; k < point.Count; k++)
+        //{
+        //    string roadName = names[k];
+        //    Vector3[] tempVector = point[k];
+        //    for (int l = 0; l < tempVector.Length - 1; l++)
+        //    {
+        //        CreateRoadWaterMesh(tempVector[l], tempVector[l + 1], 2.0f, "MapObject", Color.red, "road");
+        //        this.ShowName(tempVector[l], tempVector[l + 1], roadName, "MapObject", "roadName", Color.black);
+        //    }
+        //}
+
+        // new create road version
         List<Vector3[]> point = new List<Vector3[]>();
         List<string> names = new List<string>();
         for (int i=0; i<roadData.Count; i++)
         {
             var tempData = roadData[i];
-            if ((string)tempData["geometry"]["type"] == "LineString")
+            Vector3[] perPoint = new Vector3[tempData["listCoordinate"].Count];
+            for (int j=0; j<tempData["listCoordinate"].Count; j++)
             {
-                Vector3[] perPoint = new Vector3[tempData["geometry"]["coordinates"].Count];
-                for (int j=0; j< tempData["geometry"]["coordinates"].Count; j++)
-                {
-                    var coordinate = tempData["geometry"]["coordinates"][j];
-                    perPoint[j] = new Vector3((float)coordinate[1], 0.1f, (float)coordinate[0]);
-                }
-
-                point.Add(perPoint);
-                names.Add((string)tempData["properties"]["name"]);
+                var coordinate = tempData["listCoordinate"][j];
+                float latitude = (float)coordinate["latitude"];
+                float longitude = (float)coordinate["longitude"];
+                perPoint[j] = new Vector3(latitude, 0.1f, longitude);
             }
+
+            point.Add(perPoint);
+            names.Add((string)tempData["roadName"]);
         }
 
         for (int k = 0; k < point.Count; k++)
@@ -399,8 +483,8 @@ public class MapController : MonoBehaviour {
 
         m.triangles = indices;
 
-        //mf.mesh = m;
-        mf.mesh = RevertNormals(m);
+        mf.mesh = m;
+        //mf.mesh = RevertNormals(m);
         m.RecalculateBounds();
         m.RecalculateNormals();
         //MeshUtility.Optimize(m);
@@ -456,7 +540,7 @@ public class MapController : MonoBehaviour {
         go.tag = tagName;
         if (typeName == "roadName")
         {
-            go.transform.position = Vector3.Lerp(textPosStart, textPosEnd, 0.5f);
+            go.transform.position = Vector3.Lerp(textPosStart, textPosEnd, 0.3f);
             Vector3 direction = (textPosEnd - textPosStart).normalized;
             go.transform.rotation = Quaternion.LookRotation(direction);
             go.transform.Rotate(new Vector3(90, textPosEnd.z < textPosStart.z ? -90 : 90, 0));
@@ -469,7 +553,7 @@ public class MapController : MonoBehaviour {
         var text = go.AddComponent<TextMesh>();
         text.text = objectName;
         text.color = color;
-        text.characterSize = 2.5f;
+        text.characterSize = 0.5f;
     }
 
     // revert the normals of mesh
@@ -506,7 +590,7 @@ public class MapController : MonoBehaviour {
     }
 
     // create json string to be used as request message
-    string CreateJsonMessage(int type)
+    string CreateJsonMessage(string type)
     {
         RequestJSON requestJson = new RequestJSON();
         requestJson.id = this.uniqueId;
@@ -521,7 +605,7 @@ public class MapController : MonoBehaviour {
         return JsonUtility.ToJson(requestJson);
     }
 
-    string CreateRouteJsonMessage(int type, string destination)
+    string CreateRouteJsonMessage(string type, string destination)
     {
         RouteRequestJson routeRequestJson = new RouteRequestJson();
         routeRequestJson.id = this.uniqueId;
@@ -583,28 +667,13 @@ public class MapController : MonoBehaviour {
     [Serializable]
     public class RequestJSON
     {
-        // unique id as identifier
-        public string id;
-
-        // type of json : 1 = request, 2 = response           
-        public int type;
-
-        // player's name or username          
+        public string id; 
+        public string type;
         public string playerName;
-
-        // latitude based on gps   
         public float latitude;
-
-        // longitude based on gps      
-        public float longitude;
-
-        // pet's name     
+        public float longitude;  
         public string petName;
-
-        // position of pet in unity x coordinate      
-        public float petPosX;
-
-        // position of pet in unity y coordinate       
+        public float petPosX;    
         public float petPosY;       
     }
 
@@ -612,7 +681,7 @@ public class MapController : MonoBehaviour {
     public class RouteRequestJson
     {
         public string id;
-        public int type;
+        public string type;
         public float latitude;
         public float longitude;
         public string destination;

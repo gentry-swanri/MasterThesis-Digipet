@@ -23,7 +23,8 @@ namespace DigipetServer
         private int tileY;
 
         private HttpClient http;
-        private dynamic completeMapData;
+        //private dynamic completeMapData;
+        private ListMapData listMapData;
         private bool mapReady;
 
         private bool firstAcess;
@@ -38,7 +39,8 @@ namespace DigipetServer
             this.tileY = int.MinValue;
 
             this.http = new HttpClient();
-            this.completeMapData = null;
+            //this.completeMapData = null;
+            this.listMapData = new ListMapData();
             this.mapReady = false;
 
             this.firstAcess = true;
@@ -85,7 +87,7 @@ namespace DigipetServer
             this.ConvertRoadData(mapData.roads);
             this.ConvertPOIData(mapData.pois);
 
-            this.completeMapData = mapData;
+            //this.completeMapData = mapData;
 
             this.mapReady = true;
         }
@@ -101,64 +103,118 @@ namespace DigipetServer
 
         private void ConvertBuildingData(dynamic building)
         {
+            if (this.listMapData.listBuildingData == null)
+            {
+                this.listMapData.listBuildingData = new List<BuildingData>();
+            }
+
             for (int i=0; i<building.features.Count; i++)
             {
                 var tempData = building.features[i];
                 if (tempData.geometry.type == "Polygon")
                 {
+                    BuildingData buildingData = new BuildingData();
+                    buildingData.listCoordinate = new List<Coordinate>();
+
                     for (int j=0; j<tempData.geometry.coordinates[0].Count; j++)
                     {
                         var coordinate = tempData.geometry.coordinates[0][j];
                         float[] mercator = GeoConverter.GeoCoorToMercatorProjection((float)Convert.ToDouble(coordinate[1]), (float)Convert.ToDouble(coordinate[0]));
                         float tempX = mercator[0] - this.centerMercatorX;
                         float tempY = mercator[1] - this.centerMercatorY;
-                        coordinate[1] = tempX;
-                        coordinate[0] = tempY;
+                        //coordinate[1] = tempX;
+                        //coordinate[0] = tempY;
+                        Coordinate coor = new Coordinate();
+                        coor.latitude = tempX;
+                        coor.longitude = tempY;
+                        buildingData.listCoordinate.Add(coor);
                     }
+
+                    buildingData.buildingName = tempData.properties.name;
+                    this.listMapData.listBuildingData.Add(buildingData);
                 }
                 if (tempData.geometry.type == "Point")
                 {
+                    BuildingData buildingData = new BuildingData();
+                    buildingData.listCoordinate = new List<Coordinate>();
+
                     var coordinate = tempData.geometry.coordinates;
                     float[] mercator = GeoConverter.GeoCoorToMercatorProjection((float)Convert.ToDouble(coordinate[1]), (float)Convert.ToDouble(coordinate[0]));
                     float tempX = mercator[0] - this.centerMercatorX;
                     float tempY = mercator[1] - this.centerMercatorY;
-                    coordinate[1] = tempX;
-                    coordinate[0] = tempY;
+                    //coordinate[1] = tempX;
+                    //coordinate[0] = tempY;
+                    Coordinate coor = new Coordinate();
+                    coor.latitude = tempX;
+                    coor.longitude = tempY;
+                    buildingData.listCoordinate.Add(coor);
+
+                    buildingData.buildingName = tempData.properties.name;
+                    this.listMapData.listBuildingData.Add(buildingData);
+                    
                 }
             }
         }
 
         private void ConvertRoadData(dynamic road)
         {
+            this.listMapData.listRoadData = new List<RoadData>();
+
             for (int i=0; i<road.features.Count; i++)
             {
                 var tempData = road.features[i];
                 if (tempData.geometry.type == "LineString")
                 {
+                    RoadData roadData = new RoadData();
+                    roadData.listCoordinate = new List<Coordinate>();
+
                     for (int j = 0; j < tempData.geometry.coordinates.Count; j++)
                     {
                         var coordinate = tempData.geometry.coordinates[j];
                         float[] mercator = GeoConverter.GeoCoorToMercatorProjection((float)Convert.ToDouble(coordinate[1]), (float)Convert.ToDouble(coordinate[0]));
                         float tempX = mercator[0] - this.centerMercatorX;
                         float tempY = mercator[1] - this.centerMercatorY;
-                        coordinate[1] = tempX;
-                        coordinate[0] = tempY;
+                        //coordinate[1] = tempX;
+                        //coordinate[0] = tempY;
+                        Coordinate coor = new Coordinate();
+                        coor.latitude = tempX;
+                        coor.longitude = tempY;
+                        roadData.listCoordinate.Add(coor);
                     }
+
+                    roadData.roadName = tempData.properties.name;
+                    this.listMapData.listRoadData.Add(roadData);
                 }
             }
         }
 
         private void ConvertPOIData(dynamic poi)
         {
+            if (this.listMapData.listBuildingData == null)
+            {
+                this.listMapData.listBuildingData = new List<BuildingData>();
+            }
+
             for (int i=0; i<poi.features.Count; i++)
             {
                 var tempData = poi.features[i];
+
+                BuildingData buildingData = new BuildingData();
+                buildingData.listCoordinate = new List<Coordinate>();
+
                 var coordinate = tempData.geometry.coordinates;
                 float[] mercator = GeoConverter.GeoCoorToMercatorProjection((float)coordinate[1], (float)coordinate[0]);
                 float tempX = mercator[0] - this.centerMercatorX;
                 float tempY = mercator[1] - this.centerMercatorY;
-                coordinate[1] = tempX;
-                coordinate[0] = tempY;
+                //coordinate[1] = tempX;
+                //coordinate[0] = tempY;
+                Coordinate coor = new Coordinate();
+                coor.latitude = tempX;
+                coor.longitude = tempY;
+                buildingData.listCoordinate.Add(coor);
+
+                buildingData.buildingName = tempData.properties.name;
+                this.listMapData.listBuildingData.Add(buildingData);
             }
         }
 
@@ -212,14 +268,16 @@ namespace DigipetServer
             return this.tileY;
         }
 
-        public void SetCompleteMapData(dynamic completeMapData)
+        public void SetListMapData(ListMapData listMapData)
         {
-            this.completeMapData = completeMapData;
+            this.listMapData = listMapData;
+            //this.completeMapData = completeMapData;
         }
 
-        public dynamic GetCompleteMapData()
+        public dynamic GetListMapData()
         {
-            return this.completeMapData;
+            return this.listMapData;
+            //return this.completeMapData;
         }
 
         public void SetMapReady(bool mapReady)

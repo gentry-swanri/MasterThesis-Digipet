@@ -11,8 +11,8 @@ public class DataControllerScript : MonoBehaviour {
 
     public string username;
     public string petName;
-    public DateTime firstTime;
-    public DateTime lastSave;
+    //public DateTime firstTime;
+    //public DateTime lastSave;
     public int age;
     public float energy;
     public float hunger;
@@ -36,8 +36,8 @@ public class DataControllerScript : MonoBehaviour {
     {
         username = "Player";
         petName = "PlayerPet";
-        firstTime = DateTime.MinValue;
-        lastSave = DateTime.MinValue;
+        //firstTime = DateTime.MinValue;
+        //lastSave = DateTime.MinValue;
         age = 0;
         energy = 100;
         hunger = 0;
@@ -136,6 +136,7 @@ public class DataControllerScript : MonoBehaviour {
         }
     }
 
+    /*
     public int CalculateOld()
     {
         DateTime currentTime = DateTime.Now;
@@ -223,9 +224,11 @@ public class DataControllerScript : MonoBehaviour {
             return false;
         }
     }
+    */
 
 }
 
+/*
 [Serializable]
 class PetData
 {
@@ -245,3 +248,4 @@ class PetData
     public float hygiene;
     public float environment;
 }
+*/

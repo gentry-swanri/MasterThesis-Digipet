@@ -27,7 +27,7 @@ namespace DigipetServer
             listPlayerPos = new List<UnityPlayerPosition>();
         }
 
-        public dynamic AcquireMapData(dynamic data)
+        public ListMapData AcquireMapData(dynamic data)
         {
             Player currentPlayer;
          
@@ -39,7 +39,7 @@ namespace DigipetServer
             }
             else
             {
-                currentPlayer = listPlayer.Find(x => x.GetPlayerId() == (string)data.id);
+                currentPlayer = listPlayer.Find(x => x.GetPlayerName() == (string)data.playerName);
                 if (currentPlayer.GetIsActive() == false)
                 {
                     currentPlayer.SetIsActive(true);
@@ -58,18 +58,22 @@ namespace DigipetServer
             this.playerPosX = currentPlayer.GetMapController().GetPosX();
             this.playerPosY = currentPlayer.GetMapController().GetPosY();
 
-            dynamic mapData = currentPlayer.GetMapController().GetCompleteMapData();
+            ListMapData mapData = currentPlayer.GetMapController().GetListMapData();
 
             return mapData;
         }
 
-        public void SetPlayerActive(dynamic data)
+        public int SetPlayerActive(dynamic data)
         {
-            Player currentPlayer = listPlayer.Find(x => x.GetPlayerName() == (string)data.playerName);
+            int result = -1;
+            Player currentPlayer = listPlayer.Find(x => x.GetPlayerName() == (string)data.username);
             if (currentPlayer != null)
             {
                 currentPlayer.SetIsActive(false);
+                result = 1;
             }
+
+            return result;
         }
 
         public List<Coordinate> PlayerRouting(dynamic data)

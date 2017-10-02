@@ -11,7 +11,7 @@ public class PetController : MonoBehaviour {
     void Start()
     {
         timeBeforeRotate = Random.Range(10, 1000);
-        speed = 0.7f;
+        speed = 0.1f;
         foodEnabled = false;
     }
 

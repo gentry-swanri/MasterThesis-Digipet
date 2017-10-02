@@ -55,21 +55,21 @@ public class TimeManagerScript : MonoBehaviour {
     {
         DateTime currentTime = DateTime.Now;
         TimeSpan timeSpan = currentTime.Subtract(startTime);
-        return timeSpan.Hours;
+        return (int)timeSpan.TotalHours;
     }
 
     public int GetCurrentMinuteSpan()
     {
         DateTime currentTime = DateTime.Now;
         TimeSpan timeSpan = currentTime.Subtract(startTime);
-        return timeSpan.Minutes;
+        return (int)timeSpan.TotalMinutes;
     }
 
     public int GetCurrentSecondSpan()
     {
         DateTime currentTime = DateTime.Now;
         TimeSpan timeSpan = currentTime.Subtract(startTime);
-        return timeSpan.Seconds;
+        return (int)timeSpan.TotalSeconds;
     }
 
 }

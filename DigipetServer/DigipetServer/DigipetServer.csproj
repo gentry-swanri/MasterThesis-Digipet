@@ -71,7 +71,7 @@
     <Compile Include="PlayerManagement.cs" />
     <Compile Include="RoadData.cs" />
     <Compile Include="RouteManagement.cs" />
-    <Compile Include="UnityPlayerPosition.cs" />
+    <Compile Include="UnityPlayerPetPosition.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

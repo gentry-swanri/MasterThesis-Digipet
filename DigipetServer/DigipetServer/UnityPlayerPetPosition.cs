@@ -6,13 +6,15 @@ using System.Threading.Tasks;
 
 namespace DigipetServer
 {
-    class UnityPlayerPosition
+    class UnityPlayerPetPosition
     {
 
-        public string playerId;
+        //public string playerId;
         public string playerName;
         public float posX;
         public float posY;
-
+        public string petName;
+        public float petPosX;
+        public float petPosY;
     }
 }

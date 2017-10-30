@@ -28,7 +28,9 @@ namespace DigipetServer
             //db.GetPetData("user1");
             PlayerManagement playerManagement = new PlayerManagement();
 
-            var factory = new ConnectionFactory() { HostName = "localhost" };
+            ConnectionFactory factory = new ConnectionFactory();
+
+            //var factory = new ConnectionFactory() { HostName = "localhost" };
             using (var connection = factory.CreateConnection())
             using (var channel = connection.CreateModel())
             {
@@ -218,6 +220,11 @@ namespace DigipetServer
 
                             int result = db.UpdateStatus(username, energy, hunger, fun, hygiene, environment);
 
+                            if (result == 1)
+                            {
+                                result = playerManagement.RemovePlayer(msg);
+                            }
+
                             ReturnTitleRespondJson respond = new ReturnTitleRespondJson();
                             respond.id = msg["id"];
                             respond.type = msg["type"];
@@ -239,7 +246,8 @@ namespace DigipetServer
                         {
                             Console.WriteLine(" [x] processing list player request from {0} ", msg["id"]);
 
-                            List<UnityPlayerPosition> unityPlayerPos = playerManagement.GetOthersInRange(msg, 30.0f);
+                            playerManagement.UpdatePetLocation(msg);
+                            List<UnityPlayerPetPosition> unityPlayerPos = playerManagement.GetOthersInRange(msg, 10.0f);
 
                             ListPlayerResponseJson listPlayer = new ListPlayerResponseJson();
                             listPlayer.unityPlayerPos = unityPlayerPos;
@@ -293,7 +301,7 @@ namespace DigipetServer
 
         class ListPlayerResponseJson
         {
-            public List<UnityPlayerPosition> unityPlayerPos;
+            public List<UnityPlayerPetPosition> unityPlayerPos;
             public string type;
             public string id;
         }

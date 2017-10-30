@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Net;
 using System.Net.Http;
 using Newtonsoft.Json;
 
@@ -11,7 +12,7 @@ namespace DigipetServer
     class MapController
     {
         private string format = "json";                                                                                 // format data of mapzen vector tile
-        private string mapzenApiKey = "mapzen-KhT9o6J";                                                                 // mapzen api key. get the api key by sign up to mapzen
+        private string mapzenApiKey = "";                                                                 // mapzen api key. get the api key by sign up to mapzen
         private string mapzenUrl = "http://tile.mapzen.com/mapzen/vector/v1/{0}/{1}/{2}/{3}.{4}?api_key={5}";           // mapzen vector tile url. 0 => layers, 1 => zoom level, 2 => x tile coordinate, 3 => y tile coordinate, 4 => vector tile data format, 5 => mapzen api key
         private int zoom = 18;
 
@@ -38,7 +39,23 @@ namespace DigipetServer
             this.tileX = int.MinValue;
             this.tileY = int.MinValue;
 
-            this.http = new HttpClient();
+            // check if using proxy
+            //Console.WriteLine(string.Equals(System.Net.WebRequest.DefaultWebProxy.GetProxy(new Uri("http://cache.itb.ac.id:8080")), "http://cache.itb.ac.id:8080"));
+            //if (string.Equals(System.Net.WebRequest.DefaultWebProxy.GetProxy(new Uri("http://cache.itb.ac.id:8080")), "http://cache.itb.ac.id:8080"))
+            //{
+            //    Console.WriteLine("masuk");
+            //    HttpClientHandler handler = new HttpClientHandler();
+            //    WebProxy proxy = new WebProxy("http://cache.itb.ac.id:8080");
+            //    proxy.Credentials = new NetworkCredential("gentry.swanri", "70569875");
+            //    handler.Proxy = proxy;
+            //    handler.UseProxy = true;
+            //    this.http = new HttpClient(handler);
+            //}else
+            //{
+                Console.WriteLine("else not proxy");
+                this.http = new HttpClient();
+            //}
+
             //this.completeMapData = null;
             this.listMapData = new ListMapData();
             this.mapReady = false;
@@ -48,6 +65,8 @@ namespace DigipetServer
 
         public bool ConvertLocationAndCheck(float latitude, float longitude)
         {
+            bool result = false;
+
             float[] mercator = GeoConverter.GeoCoorToMercatorProjection(latitude, longitude);
             float[] pixel = GeoConverter.MercatorProjectionToPixel(mercator, zoom);
             int[] tile = GeoConverter.PixelToTileCoordinate(pixel);
@@ -59,18 +78,23 @@ namespace DigipetServer
                 firstAcess = false;
             }
 
+            if (tile[0] == tileX && tile[1] == tileY)
+            {
+                result = false;
+            }else
+            {
+                centerMercatorX = mercator[0];
+                centerMercatorY = mercator[1];
+
+                tileX = tile[0];
+                tileY = tile[1];
+                result = true;
+            }
+
             this.posX = mercator[0] - centerMercatorX;
             this.posY = mercator[1] - centerMercatorY;
 
-            if (tile[0] == tileX && tile[1] == tileY)
-            {
-                return false;
-            }else
-            {
-                tileX = tile[0];
-                tileY = tile[1];
-                return true;
-            }
+            return result;
         }
 
         public async void CreateMap()
@@ -82,10 +106,9 @@ namespace DigipetServer
             string url = string.Format(mapzenUrl, "buildings,roads,pois", zoom.ToString(), tileX.ToString(), tileY.ToString(), format, mapzenApiKey);
             dynamic mapData = await this.ProcessMapData(url);
             
-            
             this.ConvertBuildingData(mapData.buildings);
             this.ConvertRoadData(mapData.roads);
-            this.ConvertPOIData(mapData.pois);
+            //this.ConvertPOIData(mapData.pois);
 
             //this.completeMapData = mapData;
 
@@ -130,9 +153,10 @@ namespace DigipetServer
                         buildingData.listCoordinate.Add(coor);
                     }
 
-                    buildingData.buildingName = tempData.properties.name;
+                    //buildingData.buildingName = tempData.properties.name;
                     this.listMapData.listBuildingData.Add(buildingData);
                 }
+                
                 if (tempData.geometry.type == "Point")
                 {
                     BuildingData buildingData = new BuildingData();
@@ -153,6 +177,7 @@ namespace DigipetServer
                     this.listMapData.listBuildingData.Add(buildingData);
                     
                 }
+                
             }
         }
 

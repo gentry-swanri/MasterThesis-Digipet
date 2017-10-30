@@ -23,10 +23,12 @@ public class CameraController : MonoBehaviour {
 
         plane = GameObject.Find("Plane");
 
+        /*
         float pos = (Camera.main.nearClipPlane + this.transform.position.y);
         plane.transform.position = Camera.main.transform.position + Camera.main.transform.forward * pos;
         float h = (Mathf.Tan(Camera.main.fieldOfView * Mathf.Deg2Rad * 0.5f) * pos * 2f) / 10.0f;
         plane.transform.localScale = new Vector3(h * Camera.main.aspect, 1.0f, h);
+        */
 
         webcamTexture = new WebCamTexture();
         plane.GetComponent<MeshRenderer>().material.mainTexture = webcamTexture;

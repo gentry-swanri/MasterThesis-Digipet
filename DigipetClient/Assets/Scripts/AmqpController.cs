@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using CymaticLabs.Unity3D.Amqp;
 
 public class AmqpController : MonoBehaviour {
@@ -48,7 +49,9 @@ public class AmqpController : MonoBehaviour {
         responseExchangeType = AmqpExchangeTypes.Direct;
 
         // connect to rabbitmq server
-        AmqpClient.Instance.ConnectOnStart = true;
+
+        //AmqpClient.Instance.ConnectOnStart = true;
+        AmqpClient.Instance.Connection = "ITB";
         AmqpClient.Connect();
 
         // handle event after connected to rabbitmq server
@@ -68,6 +71,14 @@ public class AmqpController : MonoBehaviour {
         AmqpClient.Subscribe(exchangeSubscription);
 
         serverConnected = true;
+
+        /*
+        GameObject a = GameObject.Find("Test");
+        Text b = a.GetComponent<Text>();
+        b.text = "CONNECTED";
+
+        Debug.Log("Connect");
+        */
 
         // testing publish message to server
         // AmqpClient.Publish(this.requestExchangeName, this.requestRoutingKey, "test");

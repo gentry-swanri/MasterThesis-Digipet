@@ -22,6 +22,9 @@ public class MapController : MonoBehaviour {
     private float petPosX;
     private float petPosY;
     private GameObject mainCam;
+    private GameObject petObject;
+
+    List<OtherPlayerData> otherPlayerDataList;
 
     //private string fileName = "MapData.txt";
     //private string filePath = "";
@@ -32,7 +35,10 @@ public class MapController : MonoBehaviour {
 
     // Use this for initialization
     void Start () {
+        otherPlayerDataList = new List<OtherPlayerData>();
+
         mainCam = GameObject.FindGameObjectWithTag("MainCamera");
+        petObject = GameObject.Find("cat_Walk");
 
         routeObject = GameObject.Find("RouteButton");
         routeObject.GetComponent<Button>().onClick.AddListener(StartRouting);
@@ -49,9 +55,10 @@ public class MapController : MonoBehaviour {
         {
             this.UpdateGpsAndSendRequest();
         }
-        
+
+        //UpdatePetPos();
+
         CheckAndProcessResponse();
-                
         
 	}
 
@@ -66,13 +73,16 @@ public class MapController : MonoBehaviour {
     {
         this.uniqueId = Guid.NewGuid().ToString();
         this.playerName = DataControllerScript.dataController.username; //"User";
-        this.latitude = -6.8899f;
-        this.longitude = 107.61f;
+        this.latitude = -6.8899f; //-6.893126f; 
+        this.longitude = 107.61f; //107.6278f; 
         this.lastLatitude = float.MinValue;
         this.lastLongitude = float.MinValue;
         this.petName = DataControllerScript.dataController.petName; //"Pet";
         this.petPosX = 0f;
         this.petPosY = 0f;
+
+        TextMesh textMesh = petObject.GetComponentInChildren<TextMesh>();
+        textMesh.text = DataControllerScript.dataController.petName;
 
         this.mapAcquiredAndProcessed = true;
         this.firstStart = true;
@@ -87,7 +97,7 @@ public class MapController : MonoBehaviour {
             yield break;
         }
 
-        Input.location.Start();
+        Input.location.Start(0.1f, 0.1f);
 
         int maxWait = 20;
         while (Input.location.status == LocationServiceStatus.Initializing && maxWait > 0)
@@ -136,6 +146,15 @@ public class MapController : MonoBehaviour {
 
             this.mapAcquiredAndProcessed = false;
         }    
+    }
+
+    void UpdatePetPos()
+    {
+        this.petPosX = petObject.transform.position.x;
+        this.petPosY = petObject.transform.position.z;
+
+        string requestJson = CreateUpdatePetPosJsonMessage("listplayer");
+        AmqpClient.Publish(AmqpController.amqpControl.requestExchangeName, AmqpController.amqpControl.requestRoutingKey, requestJson);
     }
 
     void StartRouting()
@@ -194,7 +213,16 @@ public class MapController : MonoBehaviour {
                 if (responseType == "route") // response for create route
                 {
                     Debug.Log("CREATE ROUTE");
+                    this.DestroyGameObjectByTagName("RouteObject");
                     CreateRoute(msg["route"]);
+
+                    AmqpController.amqpControl.msg = null;
+                }
+
+                if (responseType == "listPlayer")
+                {
+                    Debug.Log("listplayer");
+                    UpdateOthersPosition(msg["unityPlayerPos"]);
 
                     AmqpController.amqpControl.msg = null;
                 }
@@ -306,6 +334,57 @@ public class MapController : MonoBehaviour {
     }
     */
 
+    void UpdateOthersPosition(CymaticLabs.Unity3D.Amqp.SimpleJSON.JSONNode data)
+    {
+        for (int i=0; i<data.Count; i++)
+        {
+            string otherUsername = (string)data[i]["playerName"];
+            float otherPosX = (float)data[i]["posX"];
+            float otherPosY = (float)data[i]["posY"];
+            string otherPetName = (string)data[i]["petName"];
+            float otherPetPosX = (float)data[i]["petPosX"];
+            float otherPetPosY = (float)data[i]["petPosY"];
+
+            OtherPlayerData other = otherPlayerDataList.Find(x => x.playerName == otherUsername);
+            if (other == null)
+            {
+                OtherPlayerData newOtherPlayer = new OtherPlayerData();
+                newOtherPlayer.playerName = otherUsername;
+                newOtherPlayer.posX = otherPosX;
+                newOtherPlayer.posY = otherPosY;
+                newOtherPlayer.petName = otherPetName;
+                newOtherPlayer.petPosX = otherPetPosX;
+                newOtherPlayer.petPosY = otherPetPosY;
+
+                otherPlayerDataList.Add(newOtherPlayer);
+
+                // belum ada nama pet
+                GameObject NewPetObject = Instantiate(Resources.Load("PetPrefab")) as GameObject;
+                NewPetObject.name = otherPetName;
+                NewPetObject.transform.position = new Vector3(otherPetPosX, 0.0f, otherPetPosY);
+
+                GameObject otherPlayerNameObject = new GameObject();
+                otherPlayerNameObject.name = otherUsername;
+                otherPlayerNameObject.transform.position = new Vector3(otherPosX, 0.0f, otherPosY);
+                var meshText = otherPlayerNameObject.AddComponent<TextMesh>() as TextMesh;
+                meshText.text = otherUsername;
+            }
+            else
+            {
+                other.petPosX = otherPetPosX;
+                other.petPosY = otherPetPosY;
+                GameObject curPetObject = GameObject.Find(otherPetName);
+                //curPetObject.GetComponent<PetController2>().enabled = false;
+
+                Vector3 newDir = Vector3.RotateTowards(curPetObject.transform.forward, new Vector3(otherPetPosX, 0.0f, otherPetPosY), Time.deltaTime * 0.1f, 0.0f);
+                curPetObject.transform.rotation = Quaternion.LookRotation(newDir);
+
+                curPetObject.transform.position = Vector3.MoveTowards(curPetObject.transform.position, new Vector3(otherPetPosX, 0.0f, otherPetPosY), Time.deltaTime * 0.1f);
+            }
+        }
+
+    }
+
     void CreateRoute(CymaticLabs.Unity3D.Amqp.SimpleJSON.JSONNode routeData)
     {
         for (int i=0; i<routeData.Count-1; i++)
@@ -363,7 +442,7 @@ public class MapController : MonoBehaviour {
             {
                 string buildingName = (string)tempData["buildingName"];
                 var coordinate = tempData["listCoordinate"][0];
-                this.ShowName(new Vector3((float)coordinate["latitude"], 0.0f, (float)coordinate["longitude"]), new Vector3(), buildingName, "MapObject", "buildingName", Color.black);
+                this.ShowName(new Vector3((float)coordinate["latitude"], 1.75f, (float)coordinate["longitude"]), new Vector3(), buildingName, "MapObject", "buildingName", Color.red);
             }
             else
             {
@@ -444,11 +523,12 @@ public class MapController : MonoBehaviour {
             for (int l = 0; l < tempVector.Length - 1; l++)
             {
                 CreateRoadWaterMesh(tempVector[l], tempVector[l + 1], 2.0f, "MapObject", Color.red, "road");
-                this.ShowName(tempVector[l], tempVector[l + 1], roadName, "MapObject", "roadName", Color.black);
+                this.ShowName(tempVector[l], tempVector[l + 1], roadName, "MapObject", "roadName", Color.blue);
             }
         }
     }
 
+    /*
     // create poi's name based on response
     void CreatePOI(CymaticLabs.Unity3D.Amqp.SimpleJSON.JSONNode poiData)
     {
@@ -463,6 +543,7 @@ public class MapController : MonoBehaviour {
             }
         }
     }
+    */
 
     // create building mesh
     void CreatePolygon(Vector2[] points2D, Vector3[] points, Color color, string tagName, string typeName)
@@ -538,9 +619,16 @@ public class MapController : MonoBehaviour {
     {
         GameObject go = new GameObject(typeName + "_mesh");
         go.tag = tagName;
+
+        var text = go.AddComponent<TextMesh>();
+        text.text = objectName;
+        text.color = color;
+        text.characterSize = 0.5f;
+        text.anchor = TextAnchor.MiddleCenter;
+
         if (typeName == "roadName")
         {
-            go.transform.position = Vector3.Lerp(textPosStart, textPosEnd, 0.3f);
+            go.transform.position = Vector3.Lerp(textPosStart, textPosEnd, 0.5f);
             Vector3 direction = (textPosEnd - textPosStart).normalized;
             go.transform.rotation = Quaternion.LookRotation(direction);
             go.transform.Rotate(new Vector3(90, textPosEnd.z < textPosStart.z ? -90 : 90, 0));
@@ -548,12 +636,8 @@ public class MapController : MonoBehaviour {
         {
             go.transform.position = textPosStart;
             go.AddComponent<NameController>();
+            text.characterSize = 1.0f;
         }
-
-        var text = go.AddComponent<TextMesh>();
-        text.text = objectName;
-        text.color = color;
-        text.characterSize = 0.5f;
     }
 
     // revert the normals of mesh
@@ -609,12 +693,25 @@ public class MapController : MonoBehaviour {
     {
         RouteRequestJson routeRequestJson = new RouteRequestJson();
         routeRequestJson.id = this.uniqueId;
+        routeRequestJson.username = this.playerName;
         routeRequestJson.type = type;
         routeRequestJson.latitude = this.latitude;
         routeRequestJson.longitude = this.longitude;
         routeRequestJson.destination = destination;
 
         return JsonUtility.ToJson(routeRequestJson);
+    }
+
+    string CreateUpdatePetPosJsonMessage(string type)
+    {
+        UpdatePetPosJson updatePetRequest = new UpdatePetPosJson();
+        updatePetRequest.id = this.uniqueId;
+        updatePetRequest.type = type;
+        updatePetRequest.username = this.playerName;
+        updatePetRequest.petPosX = this.petPosX;
+        updatePetRequest.petPosY = this.petPosY;
+
+        return JsonUtility.ToJson(updatePetRequest);
     }
 
     //void WriteFile(string msg)
@@ -681,9 +778,30 @@ public class MapController : MonoBehaviour {
     public class RouteRequestJson
     {
         public string id;
+        public string username;
         public string type;
         public float latitude;
         public float longitude;
         public string destination;
+    }
+
+    [Serializable]
+    public class UpdatePetPosJson
+    {
+        public string id;
+        public string type;
+        public string username;
+        public float petPosX;
+        public float petPosY;
+    }
+
+    public class OtherPlayerData
+    {
+        public string playerName;
+        public float posX;
+        public float posY;
+        public string petName;
+        public float petPosX;
+        public float petPosY;
     }
 }

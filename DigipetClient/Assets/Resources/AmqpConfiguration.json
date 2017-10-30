@@ -1,15 +1,18 @@
 {
-    "Connections": [
-        {
-            "Name": "localhost",
-            "Host": "localhost",
-            "AmqpPort": 5672,
-            "WebPort": 15672,
-            "VirtualHost": "/",
-            "Username": "guest",
-            "Password": "guest",
-            "ReconnectInterval": 5,
-            "RequestedHeartBeat": 30
-        }
-    ]
+  "Connections": [
+    /*
+    {
+      "Name": "localhost",
+      "Host": "localhost",
+      "AmqpPort": 5672,
+      "WebPort": 15672,
+      "VirtualHost": "/",
+      "Username": "guest",
+      "Password": "guest",
+      "ReconnectInterval": 5,
+      "RequestedHeartBeat": 30
+    },
+    */
+    
+  ]
 }

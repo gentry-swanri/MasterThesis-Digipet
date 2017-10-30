@@ -19,22 +19,25 @@ namespace DigipetServer
         private bool needCreateMap;
 
         // contain list of player position around specific player
-        private List<UnityPlayerPosition> listPlayerPos;
+        private List<UnityPlayerPetPosition> listPlayerPos;
 
         public PlayerManagement()
         {
             listPlayer = new List<Player>();
-            listPlayerPos = new List<UnityPlayerPosition>();
+            listPlayerPos = new List<UnityPlayerPetPosition>();
         }
 
         public ListMapData AcquireMapData(dynamic data)
         {
+            playerPosX = float.MinValue;
+            playerPosY = float.MinValue;
+
             Player currentPlayer;
          
             bool registered = listPlayer.Exists(x => x.GetPlayerName() == (string)data.playerName);
             if (!registered)
             {
-                currentPlayer = new Player(data.id.ToString(), data.playerName.ToString(), (float)Convert.ToDouble(data.latitude), (float)Convert.ToDouble(data.longitude), data.petName.ToString(), (float)Convert.ToDouble(data.petPosX), (float)Convert.ToDouble(data.petPosY));
+                currentPlayer = new Player(data.playerName.ToString(), (float)Convert.ToDouble(data.latitude), (float)Convert.ToDouble(data.longitude), data.petName.ToString(), (float)Convert.ToDouble(data.petPosX), (float)Convert.ToDouble(data.petPosY));
                 listPlayer.Add(currentPlayer);
             }
             else
@@ -76,9 +79,23 @@ namespace DigipetServer
             return result;
         }
 
+        public int RemovePlayer(dynamic data)
+        {
+            int result = -1;
+            Player currentPlayer = listPlayer.Find(x => x.GetPlayerName() == (string)data.username);
+            if (currentPlayer != null)
+            {
+                listPlayer.Remove(currentPlayer);
+                result = 1;
+            }
+
+            return result;
+        }
+
         public List<Coordinate> PlayerRouting(dynamic data)
         {
-            Player player = listPlayer.Find(x => x.GetPlayerId() == (string)data.id);
+            //Player player = listPlayer.Find(x => x.GetPlayerId() == (string)data.id);
+            Player player = listPlayer.Find(x => x.GetPlayerName() == (string)data.username);
             float latitude = (float)Convert.ToDouble(data.latitude);
             float longitude = (float)Convert.ToDouble(data.longitude);
 
@@ -87,25 +104,29 @@ namespace DigipetServer
             return route;
         }
 
-        public List<UnityPlayerPosition> GetOthersInRange(dynamic data, float range)
+        public List<UnityPlayerPetPosition> GetOthersInRange(dynamic data, float range)
         {
-            Player curPlayer = listPlayer.Find(x => x.GetPlayerName() == (string)data.playerName);
+            listPlayerPos.Clear();
+
+            Player curPlayer = listPlayer.Find(x => x.GetPlayerName() == (string)data.username);
             float[] curPlayerPos = GeoConverter.GeoCoorToMercatorProjection(curPlayer.GetLatitude(), curPlayer.GetLongitude());
 
-            listPlayerPos.Clear();
             for (int i=0; i<listPlayer.Count; i++)
             {
                 Player player = listPlayer.ElementAt<Player>(i);
-                if (player.GetPlayerId() != (string)data.id)
+                if (player.GetPlayerName() != (string)data.username)
                 {
-                    float[] pos = GeoConverter.GeoCoorToMercatorProjection(curPlayer.GetLatitude(), curPlayer.GetLongitude());
+                    float[] pos = GeoConverter.GeoCoorToMercatorProjection(player.GetLatitude(), player.GetLongitude());
                     if (pos[0] < curPlayerPos[0] + range && pos[1] < curPlayerPos[1] + range)
                     {
-                        UnityPlayerPosition playerInRange = new UnityPlayerPosition();
-                        playerInRange.playerId = player.GetPlayerId();
+                        UnityPlayerPetPosition playerInRange = new UnityPlayerPetPosition();
+                        //playerInRange.playerId = player.GetPlayerId();
                         playerInRange.playerName = player.GetPlayerName();
-                        playerInRange.posX = pos[0];
-                        playerInRange.posY = pos[1];
+                        playerInRange.posX = pos[0] - curPlayerPos[0];
+                        playerInRange.posY = pos[1] - curPlayerPos[1];
+                        playerInRange.petName = player.GetPet().GetPetName();
+                        playerInRange.petPosX = (player.GetPet().GetPosX() + pos[0]) - curPlayerPos[0];
+                        playerInRange.petPosY = (player.GetPet().GetPosY() + pos[1]) - curPlayerPos[1];
 
                         listPlayerPos.Add(playerInRange);
                     }
@@ -113,6 +134,16 @@ namespace DigipetServer
             }
 
             return listPlayerPos;
+        }
+
+        public void UpdatePetLocation(dynamic data)
+        {
+            Player curPlayer = listPlayer.Find(x => x.GetPlayerName() == (string)data.username);
+            if (curPlayer != null)
+            {
+                curPlayer.GetPet().SetPosX((float)data.petPosX);
+                curPlayer.GetPet().SetPosY((float)data.petPosY);
+            }
         }
 
         public float GetPlayerPosX()

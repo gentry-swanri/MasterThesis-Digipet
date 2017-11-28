@@ -32,7 +32,6 @@ namespace DigipetServer
             this.searchUrl = "http://search.mapzen.com/v1/search?text={0}&api_key={1}";
             this.routeUrl = "http://valhalla.mapzen.com/route?json={0}&api_key={1}";
             this.mapzenApiKey = mapzenKey;
-            //this.mapzenApiKey = "mapzen-KhT9o6J";
 
             this.centerMercatorX = centerMercatorX;
             this.centerMercatorY = centerMercatorY;

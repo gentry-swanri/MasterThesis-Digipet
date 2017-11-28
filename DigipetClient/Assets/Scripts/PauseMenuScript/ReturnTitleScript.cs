@@ -24,6 +24,7 @@ public class ReturnTitleScript : MonoBehaviour {
         var msg = AmqpController.amqpControl.msg;
         if (msg != null)
         {
+            //Debug.Log(msg);
             string responseId = (string)msg["id"];
             if (id == responseId)
             {
@@ -34,16 +35,21 @@ public class ReturnTitleScript : MonoBehaviour {
                     if (result == 1)
                     {
                         AmqpController.amqpControl.msg = null;
+                        DataControllerScript.dataController.isLogin = false;
                         SceneManager.LoadScene("MainMenuScene");
                     }
                 }
             }
+
+            msg = null;
         }
             
 	}
 
     public void returnTitle()
     {
+        //Debug.Log("masuk return title");
+
         ReturnTitleJson request = new ReturnTitleJson();
         request.id = id;
         request.type = "returntitle";

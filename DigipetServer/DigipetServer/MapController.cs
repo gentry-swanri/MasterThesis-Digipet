@@ -14,7 +14,7 @@ namespace DigipetServer
         private string format = "json";                                                                                 // format data of mapzen vector tile
         private string mapzenApiKey = "";                                                                 // mapzen api key. get the api key by sign up to mapzen
         private string mapzenUrl = "http://tile.mapzen.com/mapzen/vector/v1/{0}/{1}/{2}/{3}.{4}?api_key={5}";           // mapzen vector tile url. 0 => layers, 1 => zoom level, 2 => x tile coordinate, 3 => y tile coordinate, 4 => vector tile data format, 5 => mapzen api key
-        private int zoom = 18;
+        private int zoom = 17;
 
         private float centerMercatorX;
         private float centerMercatorY;
@@ -46,7 +46,7 @@ namespace DigipetServer
             //    Console.WriteLine("masuk");
             //    HttpClientHandler handler = new HttpClientHandler();
             //    WebProxy proxy = new WebProxy("http://cache.itb.ac.id:8080");
-            //    proxy.Credentials = new NetworkCredential("gentry.swanri", "70569875");
+            //    proxy.Credentials = new NetworkCredential("gentry.swanri", "");
             //    handler.Proxy = proxy;
             //    handler.UseProxy = true;
             //    this.http = new HttpClient(handler);
@@ -58,6 +58,8 @@ namespace DigipetServer
 
             //this.completeMapData = null;
             this.listMapData = new ListMapData();
+            this.listMapData.listBuildingData = new List<BuildingData>();
+            this.listMapData.listRoadData = new List<RoadData>();
             this.mapReady = false;
 
             this.firstAcess = true;
@@ -99,7 +101,7 @@ namespace DigipetServer
 
         public async void CreateMap()
         {
-            // http://tile.mapzen.com/mapzen/vector/v1/buildings,roads,pois/14/9685/6207.json?api_key=mapzen-KhT9o6J (for testing purpose)
+            // http://tile.mapzen.com/mapzen/vector/v1/buildings,roads,pois/14/9685/6207.json?api_key= (for testing purpose)
             //string url = string.Format(mapzenUrl, "buildings,roads,pois", 14, 9685, 6207, format, mapzenApiKey);
 
             this.mapReady = false;
@@ -126,10 +128,7 @@ namespace DigipetServer
 
         private void ConvertBuildingData(dynamic building)
         {
-            if (this.listMapData.listBuildingData == null)
-            {
-                this.listMapData.listBuildingData = new List<BuildingData>();
-            }
+            this.listMapData.listBuildingData.Clear();
 
             for (int i=0; i<building.features.Count; i++)
             {
@@ -148,8 +147,8 @@ namespace DigipetServer
                         //coordinate[1] = tempX;
                         //coordinate[0] = tempY;
                         Coordinate coor = new Coordinate();
-                        coor.latitude = tempX;
-                        coor.longitude = tempY;
+                        coor.latitude = tempX * 10;
+                        coor.longitude = tempY * 10;
                         buildingData.listCoordinate.Add(coor);
                     }
 
@@ -169,8 +168,8 @@ namespace DigipetServer
                     //coordinate[1] = tempX;
                     //coordinate[0] = tempY;
                     Coordinate coor = new Coordinate();
-                    coor.latitude = tempX;
-                    coor.longitude = tempY;
+                    coor.latitude = tempX * 10;
+                    coor.longitude = tempY * 10;
                     buildingData.listCoordinate.Add(coor);
 
                     buildingData.buildingName = tempData.properties.name;
@@ -183,7 +182,7 @@ namespace DigipetServer
 
         private void ConvertRoadData(dynamic road)
         {
-            this.listMapData.listRoadData = new List<RoadData>();
+            this.listMapData.listRoadData.Clear();
 
             for (int i=0; i<road.features.Count; i++)
             {
@@ -202,8 +201,8 @@ namespace DigipetServer
                         //coordinate[1] = tempX;
                         //coordinate[0] = tempY;
                         Coordinate coor = new Coordinate();
-                        coor.latitude = tempX;
-                        coor.longitude = tempY;
+                        coor.latitude = tempX * 10;
+                        coor.longitude = tempY * 10;
                         roadData.listCoordinate.Add(coor);
                     }
 
@@ -234,8 +233,8 @@ namespace DigipetServer
                 //coordinate[1] = tempX;
                 //coordinate[0] = tempY;
                 Coordinate coor = new Coordinate();
-                coor.latitude = tempX;
-                coor.longitude = tempY;
+                coor.latitude = tempX * 10;
+                coor.longitude = tempY * 10;
                 buildingData.listCoordinate.Add(coor);
 
                 buildingData.buildingName = tempData.properties.name;

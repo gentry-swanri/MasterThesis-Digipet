@@ -38,13 +38,14 @@ public class MapController : MonoBehaviour {
         otherPlayerDataList = new List<OtherPlayerData>();
 
         mainCam = GameObject.FindGameObjectWithTag("MainCamera");
-        petObject = GameObject.Find("cat_Walk");
+        petObject = GameObject.Find("cu_puppy_shiba_a");
 
         routeObject = GameObject.Find("RouteButton");
         routeObject.GetComponent<Button>().onClick.AddListener(StartRouting);
 
         this.InitDefaultProperties();
         //StartCoroutine(this.StartGPS());
+        //StartCoroutine(this.UpdateGPS());
     }
 	
 	// Update is called once per frame
@@ -97,7 +98,7 @@ public class MapController : MonoBehaviour {
             yield break;
         }
 
-        Input.location.Start(0.1f, 0.1f);
+        Input.location.Start(5, 1);
 
         int maxWait = 20;
         while (Input.location.status == LocationServiceStatus.Initializing && maxWait > 0)
@@ -124,13 +125,31 @@ public class MapController : MonoBehaviour {
         }
     }
 
+    IEnumerator UpdateGPS()
+    {
+        while (true)
+        {
+            if (!Input.location.isEnabledByUser)
+            {
+                print("GPS not enabled");
+                yield break;
+            }
+
+            if (Input.location.status == LocationServiceStatus.Running)
+            {
+                this.latitude = Input.location.lastData.latitude;
+                this.longitude = Input.location.lastData.longitude;
+                yield return new WaitForSeconds(10);
+            } 
+        }   
+    }
+
     // update latitude and longitude value and send the request to server through rabbitmq
     void UpdateGpsAndSendRequest()
     {
+        //this.latitude -= 0.00001f;
         //this.latitude = Input.location.lastData.latitude;
         //this.longitude = Input.location.lastData.longitude;
-
-        //this.latitude -= 0.00001f;
         if (this.lastLatitude != this.latitude || this.lastLongitude != this.longitude)
         {
             //Debug.Log(this.lastLatitude + " ------- " + this.latitude);
@@ -168,7 +187,9 @@ public class MapController : MonoBehaviour {
 
     void CheckAndProcessResponse()
     {
+        //Debug.Log("Check Process");
         var msg = AmqpController.amqpControl.msg;
+        //Debug.Log(msg);
         if (msg != null) // check for msg
         {
             string id = (string)msg["id"];
@@ -177,6 +198,7 @@ public class MapController : MonoBehaviour {
                 string responseType = (string)msg["type"];
                 if (responseType == "map") // response for create map
                 {
+                    //this.DestroyGameObjectByTagName("MapObject");
                     bool createNewMap = (bool)msg["needCreateMap"];
                     if (createNewMap)
                     {
@@ -376,10 +398,15 @@ public class MapController : MonoBehaviour {
                 GameObject curPetObject = GameObject.Find(otherPetName);
                 //curPetObject.GetComponent<PetController2>().enabled = false;
 
-                Vector3 newDir = Vector3.RotateTowards(curPetObject.transform.forward, new Vector3(otherPetPosX, 0.0f, otherPetPosY), Time.deltaTime * 0.1f, 0.0f);
-                curPetObject.transform.rotation = Quaternion.LookRotation(newDir);
+                Vector3 lookpos = new Vector3(other.petPosX, 0.0f, other.petPosY) - this.transform.position;
+                lookpos.y = 0;
+                if (lookpos != Vector3.zero)
+                {
+                    var rotation = Quaternion.LookRotation(lookpos);
+                    this.transform.rotation = Quaternion.Slerp(this.transform.rotation, rotation, Time.deltaTime * 1.5f);
+                }
 
-                curPetObject.transform.position = Vector3.MoveTowards(curPetObject.transform.position, new Vector3(otherPetPosX, 0.0f, otherPetPosY), Time.deltaTime * 0.1f);
+                curPetObject.transform.position = Vector3.MoveTowards(curPetObject.transform.position, new Vector3(otherPetPosX, 0.0f, otherPetPosY), Time.deltaTime * 1.5f);
             }
         }
 
@@ -522,7 +549,7 @@ public class MapController : MonoBehaviour {
             Vector3[] tempVector = point[k];
             for (int l = 0; l < tempVector.Length - 1; l++)
             {
-                CreateRoadWaterMesh(tempVector[l], tempVector[l + 1], 2.0f, "MapObject", Color.red, "road");
+                CreateRoadWaterMesh(tempVector[l], tempVector[l + 1], 5.0f, "MapObject", Color.red, "road");
                 this.ShowName(tempVector[l], tempVector[l + 1], roadName, "MapObject", "roadName", Color.blue);
             }
         }
@@ -556,6 +583,7 @@ public class MapController : MonoBehaviour {
         var mf = go.AddComponent(typeof(MeshFilter)) as MeshFilter;
         var mr = go.AddComponent(typeof(MeshRenderer)) as MeshRenderer;
         mr.material.color = color;
+        mr.material.shader = Shader.Find("GUI/Text Shader");
 
         Mesh m = new Mesh();
         m.Clear();
@@ -590,6 +618,7 @@ public class MapController : MonoBehaviour {
         var mf = go.AddComponent(typeof(MeshFilter)) as MeshFilter;
         var mr = go.AddComponent(typeof(MeshRenderer)) as MeshRenderer;
         mr.material.color = color;
+        mr.material.shader = Shader.Find("GUI/Text Shader");
 
         Mesh m = new Mesh();
         m.Clear();
@@ -623,21 +652,26 @@ public class MapController : MonoBehaviour {
         var text = go.AddComponent<TextMesh>();
         text.text = objectName;
         text.color = color;
-        text.characterSize = 0.5f;
+        text.characterSize = 5.0f;
         text.anchor = TextAnchor.MiddleCenter;
 
         if (typeName == "roadName")
         {
-            go.transform.position = Vector3.Lerp(textPosStart, textPosEnd, 0.5f);
+            //go.transform.position = Vector3.Lerp(textPosStart, textPosEnd, 0.5f);
+            Vector3 temp = Vector3.Lerp(textPosStart, textPosEnd, 0.5f);
+            go.transform.position = new Vector3(temp.x, 0.11f, temp.z);
+            //go.AddComponent<NameController>();
             Vector3 direction = (textPosEnd - textPosStart).normalized;
             go.transform.rotation = Quaternion.LookRotation(direction);
             go.transform.Rotate(new Vector3(90, textPosEnd.z < textPosStart.z ? -90 : 90, 0));
-        }else if (typeName == "buildingName" || typeName == "poiName")
+        }
+        else if (typeName == "buildingName" || typeName == "poiName")
         {
             go.transform.position = textPosStart;
             go.AddComponent<NameController>();
-            text.characterSize = 1.0f;
+            //text.characterSize = 10.0f;
         }
+        
     }
 
     // revert the normals of mesh
@@ -666,6 +700,7 @@ public class MapController : MonoBehaviour {
     // destroy all game object based on specific tag name
     void DestroyGameObjectByTagName(string tagName)
     {
+        Debug.Log("Destroy Game Object");
         GameObject[] arrGO = GameObject.FindGameObjectsWithTag(tagName);
         for (int i = 0; i < arrGO.Length; i++)
         {

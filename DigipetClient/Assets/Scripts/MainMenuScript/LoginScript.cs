@@ -55,6 +55,8 @@ public class LoginScript : MonoBehaviour {
 
     void loginGame()
     {
+        warning.text = "";
+
         InputField usernameField = GameObject.Find("UsernameInputField").GetComponent<InputField>();
         InputField passwordField = GameObject.Find("PasswordInputField").GetComponent<InputField>();
 
@@ -94,6 +96,8 @@ public class LoginScript : MonoBehaviour {
         DataControllerScript.dataController.hygiene = (int)msg["data"][4];
         DataControllerScript.dataController.environment = (int)msg["data"][5];
         DataControllerScript.dataController.petName = (string)msg["data"][6];
+
+        DataControllerScript.dataController.isLogin = true;
     }
 
     [Serializable]

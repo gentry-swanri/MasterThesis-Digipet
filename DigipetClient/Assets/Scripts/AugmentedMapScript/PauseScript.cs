@@ -39,6 +39,11 @@ public class PauseScript : MonoBehaviour {
 
                         AmqpController.amqpControl.msg = null;
 
+                        if (Input.location.status == LocationServiceStatus.Running)
+                        {
+                            Input.location.Stop();
+                        }
+
                         SceneManager.LoadScene("PauseMenuScene");
                     }
                 }

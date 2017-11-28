@@ -52,6 +52,8 @@ public class CreateAccountScript : MonoBehaviour {
 
     void CreateNewAccount()
     {
+        warningText.text = "";
+
         InputField firstNameField = GameObject.Find("FirstNameInputField").GetComponent<InputField>();
         InputField lastNameFiled = GameObject.Find("LastNameInputField").GetComponent<InputField>();
         InputField emailField = GameObject.Find("EmailInputField").GetComponent<InputField>();

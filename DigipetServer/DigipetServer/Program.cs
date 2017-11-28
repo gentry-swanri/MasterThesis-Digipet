@@ -17,6 +17,9 @@ namespace DigipetServer
         {
             Console.WriteLine("Start Server");
 
+            //EmailManagement emailManagement = new EmailManagement();
+            //emailManagement.SendEmail();
+
             // LOGIN TESTING SECTION
             //MySQLDatabase test = new MySQLDatabase();
             //test.Insert("User", "username, password, is_active", "'user', '12345', 1");
@@ -29,6 +32,12 @@ namespace DigipetServer
             PlayerManagement playerManagement = new PlayerManagement();
 
             ConnectionFactory factory = new ConnectionFactory();
+            factory.HostName = "167.205.7.226";
+            //factory.HostName = "localhost";
+            factory.Port = 5672;
+            factory.UserName = "ARmachine";
+            factory.Password = "";
+            factory.VirtualHost = "/ARX";
 
             //var factory = new ConnectionFactory() { HostName = "localhost" };
             using (var connection = factory.CreateConnection())
@@ -86,6 +95,8 @@ namespace DigipetServer
                             {
                                 count = db.Update("user", "is_active=1", "username='" + username + "'");
                             }
+
+                            playerManagement.AddPlayer(username);
 
                             LoginResponseJson response = new LoginResponseJson();
                             response.id = msg["id"];
@@ -217,14 +228,14 @@ namespace DigipetServer
                             int fun = (int)msg["fun"];
                             int hygiene = (int)msg["hygiene"];
                             int environment = (int)msg["environment"];
-
+                            
                             int result = db.UpdateStatus(username, energy, hunger, fun, hygiene, environment);
-
+                            
                             if (result == 1)
                             {
                                 result = playerManagement.RemovePlayer(msg);
                             }
-
+                            
                             ReturnTitleRespondJson respond = new ReturnTitleRespondJson();
                             respond.id = msg["id"];
                             respond.type = msg["type"];
@@ -266,6 +277,89 @@ namespace DigipetServer
                                                  body: newMessage);
 
                         }
+
+                        if (msg["type"] == "resetpassword")
+                        {
+                            Console.WriteLine(" [x] processing reset password request from {0} ", msg["id"]);
+
+                            EmailManagement emailManage = new EmailManagement();
+                            int user_id = -1;
+                            int updateResult = -1;
+                            int result = -1;
+
+                            string email = (string)msg["email"];
+
+                            user_id = db.FindUserIdByEmail(email);
+                            if (user_id != -1)
+                            {
+                                string newPass = emailManage.CreateRandomPassword(6);
+                                updateResult = db.Update("user", "password="+newPass, "id="+user_id);
+                                if (updateResult != -1)
+                                {
+                                    result = emailManage.SendEmail(email, newPass, 1);
+                                }
+                            }
+
+                            ResetPasswordJson reset = new ResetPasswordJson();
+                            reset.id = msg["id"];
+                            reset.type = msg["type"];
+                            reset.result = result;
+
+                            var jsonString = JsonConvert.SerializeObject(reset);
+
+                            // send response
+                            Console.WriteLine(" [x] sending reset password response to {0} ", msg["id"]);
+
+                            var newMessage = Encoding.UTF8.GetBytes(jsonString);
+                            channel.BasicPublish(exchange: "DigipetResponseExchange",
+                                                 routingKey: "DigipetResponseRoutingKey",
+                                                 basicProperties: null,
+                                                 body: newMessage);
+                        }
+
+                        if (msg["type"] == "changepassword")
+                        {
+                            Console.WriteLine(" [x] processing change password request from {0} ", msg["id"]);
+
+                            EmailManagement emailManage = new EmailManagement();
+
+                            string username = (string)msg["username"];
+                            string oldPass = (string)msg["oldPass"];
+                            string newPass = (string)msg["newPass"];
+
+                            int result = -1;
+
+                            int count = db.Count("user", "username='"+username+"'");
+                            if (count != -1)
+                            {
+                                int count2 = db.Count("user", "password="+oldPass);
+                                if (count2 != -1)
+                                {
+                                    result = db.Update("user", "password="+newPass, "username='"+username+"'");
+                                    if (result != -1)
+                                    {
+                                        string email = db.FindEmail(username);
+                                        result = emailManage.SendEmail(email, "", 2);
+                                    }
+                                }
+                            } 
+
+                            ChangePasswordJson change = new ChangePasswordJson();
+                            change.id = msg["id"];
+                            change.type = msg["type"];
+                            change.result = result;
+
+                            var jsonString = JsonConvert.SerializeObject(change);
+
+                            // send response
+                            Console.WriteLine(" [x] sending change password response to {0} ", msg["id"]);
+
+                            var newMessage = Encoding.UTF8.GetBytes(jsonString);
+                            channel.BasicPublish(exchange: "DigipetResponseExchange",
+                                                 routingKey: "DigipetResponseRoutingKey",
+                                                 basicProperties: null,
+                                                 body: newMessage);
+                        }
                     }
                     
 
@@ -285,11 +379,11 @@ namespace DigipetServer
         {
             public string id;
             public string type;
-            public ListMapData mapData;
             public bool needCreateMap;
             public string playerName;
             public float playerPosX;
             public float playerPosY;
+            public ListMapData mapData;
         }
 
         class RouteResponseJson
@@ -330,6 +424,20 @@ namespace DigipetServer
         }
 
         class ReturnTitleRespondJson
+        {
+            public string id;
+            public string type;
+            public int result;
+        }
+
+        class ResetPasswordJson
+        {
+            public string id;
+            public string type;
+            public int result;
+        }
+
+        class ChangePasswordJson
         {
             public string id;
             public string type;

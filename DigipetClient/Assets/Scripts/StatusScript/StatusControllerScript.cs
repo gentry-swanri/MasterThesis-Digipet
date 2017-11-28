@@ -34,6 +34,10 @@ public class StatusControllerScript : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
-		
-	}
+        energySlider.GetComponent<Slider>().value = (float)DataControllerScript.dataController.energy;
+        hungerSlider.GetComponent<Slider>().value = (float)DataControllerScript.dataController.hunger;
+        funSlider.GetComponent<Slider>().value = (float)DataControllerScript.dataController.fun;
+        hygieneSlider.GetComponent<Slider>().value = (float)DataControllerScript.dataController.hygiene;
+        environmentSlider.GetComponent<Slider>().value = (float)DataControllerScript.dataController.environment;
+    }
 }

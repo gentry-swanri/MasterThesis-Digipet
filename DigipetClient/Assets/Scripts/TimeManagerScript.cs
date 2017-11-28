@@ -8,7 +8,6 @@ public class TimeManagerScript : MonoBehaviour {
     public static TimeManagerScript timeManager;
 
     public DateTime startTime = DateTime.MinValue;
-    private bool timeChecked;
 
     void Start()
     {
@@ -17,58 +16,52 @@ public class TimeManagerScript : MonoBehaviour {
             DontDestroyOnLoad(this.gameObject);
             timeManager = this;
 
-            timeChecked = false;
-            if (startTime == DateTime.MinValue)
-            {
-                startTime = DateTime.Now;
-            }
+            //if (startTime == DateTime.MinValue)
+            //{
+                //startTime = DateTime.Now;
+            //}
         }
         else if(timeManager != this)
         {
             Destroy(this.gameObject);
         }
+
+        startTime = DateTime.Now;
     }
 
     void Update()
     {
-        int hourSpan = this.GetCurrentHourSpan();
-        if (!timeChecked && hourSpan >= 1)
+        int minuteSpan = this.GetCurrentMinuteSpan(startTime);
+        if (minuteSpan >= 1 && DataControllerScript.dataController.isLogin)
         {
-            DataControllerScript.dataController.ReduceEnergy(0.24f);
-            DataControllerScript.dataController.ReduceHygiene(0.24f);
-            DataControllerScript.dataController.ReduceHunger(0.24f);
-            DataControllerScript.dataController.ReduceFun(0.24f);
-            DataControllerScript.dataController.ReduceEnvironment(0.24f);
+            DataControllerScript.dataController.ReduceEnergy(1f);
+            DataControllerScript.dataController.ReduceHygiene(1f);
+            DataControllerScript.dataController.AddHunger(1f);
+            DataControllerScript.dataController.ReduceFun(1f);
+            DataControllerScript.dataController.ReduceEnvironment(1f);
 
             startTime = DateTime.Now;
-
-            timeChecked = true;
-        }
-
-        if (hourSpan < 1)
-        {
-            timeChecked = false;
         }
     }
 
-    public int GetCurrentHourSpan()
+    public int GetCurrentHourSpan(DateTime start)
     {
         DateTime currentTime = DateTime.Now;
-        TimeSpan timeSpan = currentTime.Subtract(startTime);
+        TimeSpan timeSpan = currentTime.Subtract(start);
         return (int)timeSpan.TotalHours;
     }
 
-    public int GetCurrentMinuteSpan()
+    public int GetCurrentMinuteSpan(DateTime start)
     {
         DateTime currentTime = DateTime.Now;
-        TimeSpan timeSpan = currentTime.Subtract(startTime);
+        TimeSpan timeSpan = currentTime.Subtract(start);
         return (int)timeSpan.TotalMinutes;
     }
 
-    public int GetCurrentSecondSpan()
+    public int GetCurrentSecondSpan(DateTime start)
     {
         DateTime currentTime = DateTime.Now;
-        TimeSpan timeSpan = currentTime.Subtract(startTime);
+        TimeSpan timeSpan = currentTime.Subtract(start);
         return (int)timeSpan.TotalSeconds;
     }
 

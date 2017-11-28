@@ -20,6 +20,8 @@ public class DataControllerScript : MonoBehaviour {
     public float hygiene;
     public float environment;
 
+    public bool isLogin;
+
     void Awake()
     {
         if (dataController == null)
@@ -44,6 +46,8 @@ public class DataControllerScript : MonoBehaviour {
         fun = 100;
         hygiene = 100;
         environment = 100;
+
+        isLogin = false;
     }
 
     public void AddEnergy(float energyValue)

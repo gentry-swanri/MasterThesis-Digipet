@@ -58,6 +58,7 @@
   <ItemGroup>
     <Compile Include="BuildingData.cs" />
     <Compile Include="Coordinate.cs" />
+    <Compile Include="EmailManagement.cs" />
     <Compile Include="GeoConverter.cs" />
     <Compile Include="ListMapData.cs" />
     <Compile Include="MapController.cs" />

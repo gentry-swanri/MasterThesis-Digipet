@@ -109,7 +109,7 @@ MonoBehaviour:
   m_MinSize: {x: 683, y: 492}
   m_MaxSize: {x: 14004, y: 14042}
   vertical: 0
-  controlID: 93
+  controlID: 9
 --- !u!114 &6
 MonoBehaviour:
   m_ObjectHideFlags: 52
@@ -133,7 +133,7 @@ MonoBehaviour:
   m_MinSize: {x: 406, y: 492}
   m_MaxSize: {x: 10002, y: 14042}
   vertical: 1
-  controlID: 22
+  controlID: 10
 --- !u!114 &7
 MonoBehaviour:
   m_ObjectHideFlags: 52
@@ -157,7 +157,7 @@ MonoBehaviour:
   m_MinSize: {x: 406, y: 221}
   m_MaxSize: {x: 8006, y: 4021}
   vertical: 0
-  controlID: 109
+  controlID: 11
 --- !u!114 &8
 MonoBehaviour:
   m_ObjectHideFlags: 52
@@ -176,8 +176,8 @@ MonoBehaviour:
     y: 0
     width: 379
     height: 587
-  m_MinSize: {x: 202, y: 221}
-  m_MaxSize: {x: 4002, y: 4021}
+  m_MinSize: {x: 200, y: 200}
+  m_MaxSize: {x: 4000, y: 4000}
   m_ActualView: {fileID: 12}
   m_Panes:
   - {fileID: 12}
@@ -254,8 +254,8 @@ MonoBehaviour:
     y: 0
     width: 388
     height: 947
-  m_MinSize: {x: 277, y: 71}
-  m_MaxSize: {x: 4002, y: 4021}
+  m_MinSize: {x: 275, y: 50}
+  m_MaxSize: {x: 4000, y: 4000}
   m_ActualView: {fileID: 18}
   m_Panes:
   - {fileID: 18}
@@ -289,7 +289,7 @@ MonoBehaviour:
     height: 566
   m_TreeViewState:
     scrollPos: {x: 0, y: 0}
-    m_SelectedIDs: e0250000
+    m_SelectedIDs: 68060000
     m_LastClickedID: 0
     m_ExpandedIDs: e0fbffff00000000
     m_RenameOverlay:
@@ -341,14 +341,14 @@ MonoBehaviour:
     width: 1149
     height: 566
   m_SceneLighting: 1
-  lastFramingTime: 500.87127822222226
+  lastFramingTime: 2185.06789970797
   m_2DMode: 0
   m_isRotationLocked: 0
   m_AudioPlay: 0
   m_Position:
-    m_Target: {x: 52.61885, y: -92.50305, z: -14.832634}
+    m_Target: {x: 560.7551, y: 256.34915, z: 140.43634}
     speed: 2
-    m_Value: {x: 52.61885, y: -92.50305, z: -14.832634}
+    m_Value: {x: 560.7551, y: 256.34915, z: 140.43634}
   m_RenderMode: 0
   m_ValidateTrueMetals: 0
   m_SceneViewState:
@@ -371,13 +371,13 @@ MonoBehaviour:
       speed: 2
       m_Value: 0
   m_Rotation:
-    m_Target: {x: 0.4575423, y: 0.29266557, z: -0.16255543, w: 0.82375836}
+    m_Target: {x: -0.028496472, y: -0.005090238, z: 0.00014511833, w: -0.999581}
     speed: 2
-    m_Value: {x: -0.4575423, y: -0.29266557, z: 0.16255543, w: -0.82375836}
+    m_Value: {x: -0.028496472, y: -0.005090238, z: 0.00014511833, w: -0.999581}
   m_Size:
-    m_Target: 301.38562
+    m_Target: 931.7655
     speed: 2
-    m_Value: 301.38562
+    m_Value: 931.7655
   m_Ortho:
     m_Target: 0
     speed: 2
@@ -527,19 +527,19 @@ MonoBehaviour:
     m_ShowAllHits: 0
     m_SearchArea: 0
     m_Folders:
-    - Assets/Resources
+    - Assets/Scripts/AugmentedMapScript
   m_ViewMode: 1
   m_StartGridSize: 16
   m_LastFolders:
-  - Assets/Resources
+  - Assets/Scripts/AugmentedMapScript
   m_LastFoldersGridSize: 16
   m_LastProjectPath: D:\MasterData\MasterThesis-Digipet\DigipetClient
   m_IsLocked: 0
   m_FolderTreeState:
-    scrollPos: {x: 0, y: 2}
-    m_SelectedIDs: 38260000
-    m_LastClickedID: 9784
-    m_ExpandedIDs: 000000001225000052250000d82500002026000000ca9a3bffffff7f
+    scrollPos: {x: 0, y: 14}
+    m_SelectedIDs: 42270000
+    m_LastClickedID: 10050
+    m_ExpandedIDs: 000000001c25000090250000c2250000d42600008027000000ca9a3bffffff7f
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
@@ -567,7 +567,7 @@ MonoBehaviour:
     scrollPos: {x: 0, y: 0}
     m_SelectedIDs: 
     m_LastClickedID: 0
-    m_ExpandedIDs: 000000001225000052250000d825000020260000
+    m_ExpandedIDs: 000000001c25000090250000c2250000d426000080270000
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 

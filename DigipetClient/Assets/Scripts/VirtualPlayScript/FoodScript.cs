@@ -27,8 +27,8 @@ public class FoodScript : MonoBehaviour {
 
         if (eatTime <= 0)
         {
-            DataControllerScript.dataController.ReduceHunger(0.24f);
-            DataControllerScript.dataController.AddEnergy(0.24f);
+            DataControllerScript.dataController.ReduceHunger(5f);
+            DataControllerScript.dataController.AddEnergy(5f);
 
             GameObject food = GameObject.Find("PetFood");
             Destroy(food);

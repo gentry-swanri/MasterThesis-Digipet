@@ -231,6 +231,28 @@ namespace DigipetServer
             return result;
         }
 
+        public int FindUserIdByEmail(string email)
+        {
+            int id = -1;
+            string query = "SELECT user_id FROM User_detail WHERE email='" + email + "'";
+
+            if (this.OpenConnection())
+            {
+                MySqlCommand command = new MySqlCommand(query, connection);
+                MySqlDataReader reader = command.ExecuteReader();
+
+                while (reader.Read())
+                {
+                    id = (int)reader["user_id"];
+                }
+
+                reader.Close();
+                this.CloseConnection();
+            }
+
+            return id;
+        }
+
         private int FindUserId(string username)
         {
             int id = -1;
@@ -250,6 +272,28 @@ namespace DigipetServer
             }
 
             return id;
+        }
+
+        public string FindEmail(string username)
+        {
+            string email = "";
+            int id = FindUserId(username);
+            string query = "SELECT email FROM User_detail WHERE user_id='" + id + "'";
+            if (this.OpenConnection())
+            {
+                MySqlCommand command = new MySqlCommand(query, connection);
+                MySqlDataReader reader = command.ExecuteReader();
+
+                while (reader.Read())
+                {
+                    email = (string)reader["email"];
+                }
+
+                reader.Close();
+                this.CloseConnection();
+            }
+
+            return email;
         }
 
     }

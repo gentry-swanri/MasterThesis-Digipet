@@ -52,6 +52,15 @@ namespace DigipetServer
                     currentPlayer.SetLatitude((float)Convert.ToDouble(data.latitude));
                     currentPlayer.SetLongitude((float)Convert.ToDouble(data.longitude));
                 }
+                if (currentPlayer.GetPet().GetPosX() != (float)Convert.ToDouble(data.petPosX) || currentPlayer.GetPet().GetPosY() != (float)Convert.ToDouble(data.petPosY))
+                {
+                    currentPlayer.GetPet().SetPosX((float)Convert.ToDouble(data.petPosX));
+                    currentPlayer.GetPet().SetPosY((float)Convert.ToDouble(data.petPosY));
+                }
+                if (currentPlayer.GetPet().GetPetName() == "")
+                {
+                    currentPlayer.GetPet().SetPetName((string)data.petName);
+                }
             }
 
             currentPlayer.GetMapController().SetMapReady(false);
@@ -64,6 +73,13 @@ namespace DigipetServer
             ListMapData mapData = currentPlayer.GetMapController().GetListMapData();
 
             return mapData;
+        }
+
+        public void AddPlayer(string username)
+        {
+            Player newPlayer = new Player(username, 0, 0, "", 0, 0);
+            newPlayer.SetIsActive(false);
+            listPlayer.Add(newPlayer);
         }
 
         public int SetPlayerActive(dynamic data)

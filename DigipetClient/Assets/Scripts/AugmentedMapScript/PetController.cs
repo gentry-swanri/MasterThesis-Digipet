@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using UnityEngine.EventSystems;
 
 public class PetController : MonoBehaviour {
 
@@ -7,12 +8,17 @@ public class PetController : MonoBehaviour {
     private float speed;
     private bool foodEnabled;
 
+    private Animator anim;
+    private bool isEating;
+    private int eatTime;
+
     // Use this for initialization
     void Start()
     {
         timeBeforeRotate = Random.Range(10, 1000);
-        speed = 0.1f;
+        speed = 1.5f;
         foodEnabled = false;
+        isEating = false;
     }
 
     // Update is called once per frame
@@ -21,6 +27,7 @@ public class PetController : MonoBehaviour {
         MoveBehaviour();
         GiveFood();
         MoveToEat();
+        Eating();
     }
 
     void MoveBehaviour()
@@ -49,17 +56,22 @@ public class PetController : MonoBehaviour {
     {
         if (!foodEnabled)
         {
-            if (Input.touchCount == 1)
+            if(Input.GetMouseButtonDown(0))//if (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Begin)
             {
-                GameObject food = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                food.tag = "Food";
-                food.transform.localScale = new Vector3(1f, 1f, 1f);
-                food.transform.position = new Vector3(Random.Range(-10, 10), 0.0f, Random.Range(-10, 10));
-                Rigidbody foodRigibody = food.AddComponent<Rigidbody>();
-                foodRigibody.mass = 1;
-                foodRigibody.isKinematic = true;
+                if (!EventSystem.current.IsPointerOverGameObject()) // if(!EventSystem.current.IsPointerOverGameObject(Input.GetTouch(0).fingerId))
+                {
+                    GameObject food = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                    food.tag = "Food";
+                    food.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
+                    food.transform.position = new Vector3(0, 0, 0);
+                    //food.transform.position = new Vector3(Random.Range(-10, 10), 0.0f, Random.Range(-10, 10));
+                    Rigidbody foodRigibody = food.AddComponent<Rigidbody>();
+                    foodRigibody.mass = 1;
+                    foodRigibody.isKinematic = true;
 
-                foodEnabled = true;
+                    foodEnabled = true;
+                }
+                    
             }
         }
     }
@@ -70,11 +82,38 @@ public class PetController : MonoBehaviour {
         {
             GameObject food = GameObject.FindGameObjectWithTag("Food");
 
-            // not tested
-            Vector3 newDir = Vector3.RotateTowards(this.transform.forward, food.transform.position, Time.deltaTime * speed, 0.0f);
-            this.transform.rotation = Quaternion.LookRotation(newDir);
+            Vector3 lookpos = food.transform.position - this.transform.position;
+            lookpos.y = 0;
+            if (lookpos != Vector3.zero)
+            {
+                var rotation = Quaternion.LookRotation(lookpos);
+                this.transform.rotation = Quaternion.Slerp(this.transform.rotation, rotation, Time.deltaTime * speed);
+            }  
 
             this.transform.position = Vector3.MoveTowards(this.transform.position, food.transform.position, Time.deltaTime * speed);
+        }
+    }
+
+    void Eating()
+    {
+        if (isEating)
+        {
+            if (eatTime > 0)
+            {
+                eatTime--;
+            }else
+            {
+                DataControllerScript.dataController.ReduceHunger(5f);
+                DataControllerScript.dataController.AddEnergy(5f);
+
+                anim.runtimeAnimatorController = Resources.Load("AnimationController/PetWalkController") as RuntimeAnimatorController;
+                eatTime = 160;
+                isEating = false;
+
+                foodEnabled = false;
+                timeBeforeRotate = -1;
+                Destroy(GameObject.FindGameObjectWithTag("Food"));
+            }
         }
     }
 
@@ -84,12 +123,10 @@ public class PetController : MonoBehaviour {
         if (col.gameObject.tag == "Food")
         {
             //Debug.Log("eat food");
-            foodEnabled = false;
-            timeBeforeRotate = -1;
-            Destroy(col.gameObject);
-
-            DataControllerScript.dataController.AddEnergy(1.0f);
-            DataControllerScript.dataController.ReduceHunger(1.0f);
+            anim = GameObject.Find("cat_Walk").GetComponent<Animator>();
+            anim.runtimeAnimatorController = Resources.Load("AnimationController/PetEatController") as RuntimeAnimatorController;
+            isEating = true;
+            eatTime = 160;
 
             //if (DataController.HUNGER < 100)
             //{

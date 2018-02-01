@@ -32,12 +32,15 @@ namespace DigipetServer
             PlayerManagement playerManagement = new PlayerManagement();
 
             ConnectionFactory factory = new ConnectionFactory();
-            factory.HostName = "167.205.7.226";
             //factory.HostName = "localhost";
+
+            
+            factory.HostName = "167.205.7.226";
             factory.Port = 5672;
             factory.UserName = "ARmachine";
-            factory.Password = "";
+            factory.Password = "12345";
             factory.VirtualHost = "/ARX";
+            
 
             //var factory = new ConnectionFactory() { HostName = "localhost" };
             using (var connection = factory.CreateConnection())
@@ -80,7 +83,7 @@ namespace DigipetServer
 
                     // process request
                     Console.WriteLine(" [x] received request = {0}", message);
-                    
+
                     dynamic msg = JsonConvert.DeserializeObject(message);
                     if (msg != null)
                     {
@@ -90,7 +93,8 @@ namespace DigipetServer
 
                             string username = (string)msg["username"];
                             string password = (string)msg["password"];
-                            int count = db.Count("user", "username='"+ username +"' AND password='" + password +"'");
+                            int count = db.Count("user", "username='" + username + "' AND password='" + password + "'");// AND is_active=0");
+                            
                             if (count == 1)
                             {
                                 count = db.Update("user", "is_active=1", "username='" + username + "'");
@@ -106,6 +110,8 @@ namespace DigipetServer
                             response.data = db.GetPetData(username);
 
                             var jsonString = JsonConvert.SerializeObject(response);
+
+                            Console.WriteLine(jsonString);
 
                             // send response
                             var newMessage = Encoding.UTF8.GetBytes(jsonString);
@@ -157,6 +163,10 @@ namespace DigipetServer
                             responseJson.playerName = msg["playerName"];
                             responseJson.playerPosX = playerManagement.GetPlayerPosX();
                             responseJson.playerPosY = playerManagement.GetPlayerPosY();
+                            responseJson.centerPosX = playerManagement.GetCenterPosX();
+                            responseJson.centerPosY = playerManagement.GetCenterPosY();
+                            responseJson.tileX = playerManagement.GetTileX();
+                            responseJson.tileY = playerManagement.GetTileY();
 
                             var jsonString = JsonConvert.SerializeObject(responseJson);
 
@@ -170,12 +180,38 @@ namespace DigipetServer
                             Console.WriteLine(" [x] map response sent to {0} ", msg["id"]);
                         }
 
-                        if (msg["type"] == "pause")
+                        if (msg["type"] == "maptohome")
                         {
-                            Console.WriteLine(" [x] processing pause request from {0} ", msg["id"]);
+                            Console.WriteLine(" [x] processing maptohome request from {0} ", msg["id"]);
 
                             int result = playerManagement.SetPlayerActive(msg);
 
+
+                            // send update to other user that user return home
+                            List<UnityPlayerPetPosition> unityPlayerPos = playerManagement.GetOthers(msg);
+
+                            ListPlayerResponseJson listPlayer = new ListPlayerResponseJson();
+                            listPlayer.unityPlayerPos = unityPlayerPos;
+                            listPlayer.type = "listplayer";
+                            listPlayer.tileX = (int)msg["tileX"];
+                            listPlayer.tileY = (int)msg["tileY"];
+                            //listPlayer.id = msg["id"];
+
+                            var jsonString2 = JsonConvert.SerializeObject(listPlayer);
+
+                            // send response
+                            //Console.WriteLine(" [x] sending list player response to {0} ", msg["username"]);
+                            Console.WriteLine(" list player2 = " + jsonString2);
+
+                            var newMessage2 = Encoding.UTF8.GetBytes(jsonString2);
+                            channel.BasicPublish(exchange: "DigipetResponseExchange",
+                                                 routingKey: "DigipetResponseRoutingKey",
+                                                 basicProperties: null,
+                                                 body: newMessage2);
+
+
+
+                            // map to home response
                             PauseRespondJson respond = new PauseRespondJson();
                             respond.id = msg["id"];
                             respond.type = msg["type"];
@@ -192,7 +228,8 @@ namespace DigipetServer
                                                  basicProperties: null,
                                                  body: newMessage);
 
-                            Console.WriteLine(" [x] pause response sent to {0} ", msg["id"]);
+                            Console.WriteLine(" [x] maptohome response sent to {0} ", msg["id"]);
+
                         }
 
                         if (msg["type"] == "route")
@@ -223,13 +260,15 @@ namespace DigipetServer
                             Console.WriteLine(" [x] processing return title request from {0} ", msg["id"]);
 
                             string username = (string)msg["username"];
+                            int rest = (int)msg["rest"];
                             int energy = (int)msg["energy"];
-                            int hunger = (int)msg["hunger"];
-                            int fun = (int)msg["fun"];
-                            int hygiene = (int)msg["hygiene"];
-                            int environment = (int)msg["environment"];
-                            
-                            int result = db.UpdateStatus(username, energy, hunger, fun, hygiene, environment);
+                            int agility = (int)msg["agility"];
+                            int stress = (int)msg["stress"];
+                            int heart = (int)msg["heart"];
+                            int money = (int)msg["money"];
+                            int xp = (int)msg["xp"];
+
+                            int result = db.UpdateStatus(username, rest, energy, agility, stress, heart, money, xp);
                             
                             if (result == 1)
                             {
@@ -255,20 +294,23 @@ namespace DigipetServer
 
                         if (msg["type"] == "listplayer")
                         {
-                            Console.WriteLine(" [x] processing list player request from {0} ", msg["id"]);
+                            Console.WriteLine(" [x] processing list player request from {0} ", msg["username"]);
 
                             playerManagement.UpdatePetLocation(msg);
-                            List<UnityPlayerPetPosition> unityPlayerPos = playerManagement.GetOthersInRange(msg, 10.0f);
+                            List<UnityPlayerPetPosition> unityPlayerPos = playerManagement.GetOthers(msg);
 
                             ListPlayerResponseJson listPlayer = new ListPlayerResponseJson();
                             listPlayer.unityPlayerPos = unityPlayerPos;
                             listPlayer.type = msg["type"];
-                            listPlayer.id = msg["id"];
+                            listPlayer.tileX = (int)msg["tileX"];
+                            listPlayer.tileY = (int)msg["tileY"];
+                            //listPlayer.id = msg["id"];
 
                             var jsonString = JsonConvert.SerializeObject(listPlayer);
 
                             // send response
-                            Console.WriteLine(" [x] sending list player response to {0} ", msg["id"]);
+                            Console.WriteLine(" [x] sending list player response to {0} ", msg["username"]);
+                            Console.WriteLine(" list player = "+jsonString);
 
                             var newMessage = Encoding.UTF8.GetBytes(jsonString);
                             channel.BasicPublish(exchange: "DigipetResponseExchange",
@@ -360,6 +402,29 @@ namespace DigipetServer
                                                  basicProperties: null,
                                                  body: newMessage);
                         }
+
+                        if (msg["type"] == "restart")
+                        {
+                            Console.WriteLine(" [x] processing restart request from {0} ", msg["id"]);
+
+                            string username = (string)msg["username"];
+
+                            RestartJson response = new RestartJson();
+                            response.id = msg["id"];
+                            response.type = msg["type"];
+                            response.result = db.UpdateStatus(username, 100, 100, 100, 100, 6, 100, 0);
+
+                            var jsonString = JsonConvert.SerializeObject(response);
+
+                            // send response
+                            var newMessage = Encoding.UTF8.GetBytes(jsonString);
+                            channel.BasicPublish(exchange: "DigipetResponseExchange",
+                                                 routingKey: "DigipetResponseRoutingKey",
+                                                 basicProperties: null,
+                                                 body: newMessage);
+
+                            Console.WriteLine(" [x] restart response sent to {0} ", msg["id"]);
+                        }
                     }
                     
 
@@ -383,6 +448,10 @@ namespace DigipetServer
             public string playerName;
             public float playerPosX;
             public float playerPosY;
+            public float centerPosX;
+            public float centerPosY;
+            public int tileX;
+            public int tileY;
             public ListMapData mapData;
         }
 
@@ -397,7 +466,9 @@ namespace DigipetServer
         {
             public List<UnityPlayerPetPosition> unityPlayerPos;
             public string type;
-            public string id;
+            public int tileX;
+            public int tileY;
+            //public string id;
         }
 
         class LoginResponseJson
@@ -438,6 +509,13 @@ namespace DigipetServer
         }
 
         class ChangePasswordJson
+        {
+            public string id;
+            public string type;
+            public int result;
+        }
+
+        class RestartJson
         {
             public string id;
             public string type;

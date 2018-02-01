@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2015
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Digipet", "Digipet.csproj", "{7592420B-0D3E-EF10-E4A2-7C358304D1C5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Digipet.Editor", "Digipet.Editor.csproj", "{4BA9ED6A-CCBA-ECC5-2639-9F52697A086D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7592420B-0D3E-EF10-E4A2-7C358304D1C5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7592420B-0D3E-EF10-E4A2-7C358304D1C5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7592420B-0D3E-EF10-E4A2-7C358304D1C5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7592420B-0D3E-EF10-E4A2-7C358304D1C5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4BA9ED6A-CCBA-ECC5-2639-9F52697A086D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4BA9ED6A-CCBA-ECC5-2639-9F52697A086D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4BA9ED6A-CCBA-ECC5-2639-9F52697A086D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4BA9ED6A-CCBA-ECC5-2639-9F52697A086D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

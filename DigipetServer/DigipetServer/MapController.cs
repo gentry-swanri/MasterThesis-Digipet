@@ -12,9 +12,9 @@ namespace DigipetServer
     class MapController
     {
         private string format = "json";                                                                                 // format data of mapzen vector tile
-        private string mapzenApiKey = "";                                                                 // mapzen api key. get the api key by sign up to mapzen
+        private string mapzenApiKey = "mapzen-KhT9o6J";                                                                 // mapzen api key. get the api key by sign up to mapzen
         private string mapzenUrl = "http://tile.mapzen.com/mapzen/vector/v1/{0}/{1}/{2}/{3}.{4}?api_key={5}";           // mapzen vector tile url. 0 => layers, 1 => zoom level, 2 => x tile coordinate, 3 => y tile coordinate, 4 => vector tile data format, 5 => mapzen api key
-        private int zoom = 17;
+        private int zoom = 18;
 
         private float centerMercatorX;
         private float centerMercatorY;
@@ -22,6 +22,9 @@ namespace DigipetServer
         private float posY;
         private int tileX;
         private int tileY;
+
+        private float centerPosX;
+        private float centerPosY;
 
         private HttpClient http;
         //private dynamic completeMapData;
@@ -39,20 +42,23 @@ namespace DigipetServer
             this.tileX = int.MinValue;
             this.tileY = int.MinValue;
 
+            this.centerPosX = float.MinValue;
+            this.centerPosY = float.MinValue;
+
             // check if using proxy
             //Console.WriteLine(string.Equals(System.Net.WebRequest.DefaultWebProxy.GetProxy(new Uri("http://cache.itb.ac.id:8080")), "http://cache.itb.ac.id:8080"));
             //if (string.Equals(System.Net.WebRequest.DefaultWebProxy.GetProxy(new Uri("http://cache.itb.ac.id:8080")), "http://cache.itb.ac.id:8080"))
             //{
-            //    Console.WriteLine("masuk");
-            //    HttpClientHandler handler = new HttpClientHandler();
-            //    WebProxy proxy = new WebProxy("http://cache.itb.ac.id:8080");
-            //    proxy.Credentials = new NetworkCredential("gentry.swanri", "");
-            //    handler.Proxy = proxy;
-            //    handler.UseProxy = true;
-            //    this.http = new HttpClient(handler);
+                //Console.WriteLine("masuk");
+                //HttpClientHandler handler = new HttpClientHandler();
+                //WebProxy proxy = new WebProxy("http://cache.itb.ac.id:8080");
+                //proxy.Credentials = new NetworkCredential("gentry.swanri", "70569875");
+                //handler.Proxy = proxy;
+                //handler.UseProxy = true;
+                //this.http = new HttpClient(handler);
             //}else
             //{
-                Console.WriteLine("else not proxy");
+                //Console.WriteLine("else not proxy");
                 this.http = new HttpClient();
             //}
 
@@ -95,6 +101,8 @@ namespace DigipetServer
 
             this.posX = mercator[0] - centerMercatorX;
             this.posY = mercator[1] - centerMercatorY;
+            this.centerPosX = centerMercatorX; //mercator[0];
+            this.centerPosY = centerMercatorY; //mercator[1];
 
             return result;
         }
@@ -110,7 +118,7 @@ namespace DigipetServer
             
             this.ConvertBuildingData(mapData.buildings);
             this.ConvertRoadData(mapData.roads);
-            //this.ConvertPOIData(mapData.pois);
+            this.ConvertPOIData(mapData.pois);
 
             //this.completeMapData = mapData;
 
@@ -147,8 +155,8 @@ namespace DigipetServer
                         //coordinate[1] = tempX;
                         //coordinate[0] = tempY;
                         Coordinate coor = new Coordinate();
-                        coor.latitude = tempX * 10;
-                        coor.longitude = tempY * 10;
+                        coor.latitude = tempX;
+                        coor.longitude = tempY;
                         buildingData.listCoordinate.Add(coor);
                     }
 
@@ -168,8 +176,8 @@ namespace DigipetServer
                     //coordinate[1] = tempX;
                     //coordinate[0] = tempY;
                     Coordinate coor = new Coordinate();
-                    coor.latitude = tempX * 10;
-                    coor.longitude = tempY * 10;
+                    coor.latitude = tempX;
+                    coor.longitude = tempY;
                     buildingData.listCoordinate.Add(coor);
 
                     buildingData.buildingName = tempData.properties.name;
@@ -201,8 +209,8 @@ namespace DigipetServer
                         //coordinate[1] = tempX;
                         //coordinate[0] = tempY;
                         Coordinate coor = new Coordinate();
-                        coor.latitude = tempX * 10;
-                        coor.longitude = tempY * 10;
+                        coor.latitude = tempX;
+                        coor.longitude = tempY;
                         roadData.listCoordinate.Add(coor);
                     }
 
@@ -233,8 +241,8 @@ namespace DigipetServer
                 //coordinate[1] = tempX;
                 //coordinate[0] = tempY;
                 Coordinate coor = new Coordinate();
-                coor.latitude = tempX * 10;
-                coor.longitude = tempY * 10;
+                coor.latitude = tempX;
+                coor.longitude = tempY;
                 buildingData.listCoordinate.Add(coor);
 
                 buildingData.buildingName = tempData.properties.name;
@@ -312,6 +320,16 @@ namespace DigipetServer
         public bool GetMapReady()
         {
             return this.mapReady;
+        }
+
+        public float GetCenterPosX()
+        {
+            return this.centerPosX;
+        }
+
+        public float GetCenterPosY()
+        {
+            return this.centerPosY;
         }
     }
 }

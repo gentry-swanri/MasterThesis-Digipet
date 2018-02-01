@@ -132,15 +132,11 @@ namespace DigipetServer
             int count = this.Count("user", "username='" + username + "'" );
             if (count == 0)
             {
-                affected = this.Insert("user", "username, password, is_active", "'" + username + "', '" + password + "', 1");
+                affected = this.Insert("user", "username, password, is_active, first_name, last_name, email", "'" + username + "', '" + password + "', 0, '" + firstName + "', '" + lastName + "', '" + email + "'");
                 if (affected == 1)
                 {
                     int userId = this.FindUserId(username);
-                    affected = this.Insert("user_detail","first_name, last_name, email, user_id", "'" + firstName + "', '" + lastName + "', '" + email + "', " + userId);
-                    if (affected == 1)
-                    {
-                        affected = this.Insert("pet_detail", "pet_name, energy, hunger, fun, hygiene, environment, user_id", "'" + petName + "', 100, 100, 100, 100, 100, " + userId);
-                    }
+                    affected = this.Insert("game_data", "pet_name, rest, energy, agility, stress, heart, money, xp, user_id", "'" + petName + "', 100, 100, 100, 100, 6, 100, 0, " + userId);
                 }
             }else
             {
@@ -155,29 +151,33 @@ namespace DigipetServer
             List<Object> data = new List<Object>();
             int userId = this.FindUserId(username);
 
-            string query = "SELECT pet_name, energy, hunger, fun, hygiene, environment, created_at, last_modified FROM pet_detail WHERE user_id='" + userId + "'";
+            string query = "SELECT pet_name, rest, energy, agility, stress, heart, money, xp, created_at, last_modified FROM game_data WHERE user_id='" + userId + "'";
             if (this.OpenConnection())
             {
                 MySqlCommand command = new MySqlCommand(query, connection);
                 MySqlDataReader reader = command.ExecuteReader();
 
                 string pet_name = "";
+                int rest = -1;
                 int energy = -1;
-                int hunger = -1;
-                int fun = -1;
-                int hygiene = -1;
-                int environment = -1;
+                int agility = -1;
+                int stress = -1;
+                int heart = -1;
+                int money = -1;
+                int xp = -1;
                 string created_at = "";
                 string last_modified = "";
 
                 while (reader.Read())
                 {
                     pet_name = (string)reader["pet_name"];
+                    rest = (int)reader["rest"];
                     energy = (int)reader["energy"];
-                    hunger = (int)reader["hunger"];
-                    fun = (int)reader["fun"];
-                    hygiene = (int)reader["hygiene"];
-                    environment = (int)reader["environment"];
+                    agility = (int)reader["agility"];
+                    stress = (int)reader["stress"];
+                    heart = (int)reader["heart"];
+                    money = (int)reader["money"];
+                    xp = (int)reader["xp"];
                     created_at = reader["created_at"].ToString();
                     last_modified = reader["last_modified"].ToString();
                 }
@@ -185,6 +185,7 @@ namespace DigipetServer
                 reader.Close();
                 this.CloseConnection();
 
+                /*
                 // update status since last_modified and calculate age
                 DateTime created_at_datetime = Convert.ToDateTime(created_at);
                 DateTime last_modified_datetime = Convert.ToDateTime(last_modified);
@@ -200,20 +201,22 @@ namespace DigipetServer
                 fun -= totalReduce;
                 hygiene -= totalReduce;
                 environment -= totalReduce;
+                */
 
-                data.Add(age);
-                data.Add((energy < 0) ? 0 : energy);
-                data.Add((hunger >= 100) ? 100 : hunger);
-                data.Add((fun < 0) ? 0 : fun);
-                data.Add((hygiene < 0) ? 0 : hygiene);
-                data.Add((environment < 0) ? 0 : environment);
+                data.Add(heart);
+                data.Add(money);
+                data.Add(xp);
+                data.Add(rest);
+                data.Add(energy);
+                data.Add(agility);
+                data.Add(stress);
                 data.Add(pet_name);
             }
 
             return data;
         }
 
-        public int UpdateStatus(string username, int energy, int hunger, int fun, int hygiene, int environment)
+        public int UpdateStatus(string username, int rest, int energy, int agility, int stress, int heart, int money, int xp)
         {
             int result = -1;
 
@@ -221,7 +224,7 @@ namespace DigipetServer
             if (affected == 1)
             {
                 int user_id = this.FindUserId(username);
-                affected = this.Update("pet_detail", "energy=" + energy + ", hunger=" + hunger + ", fun=" + fun + ", hygiene=" + hygiene + ", environment=" + environment, "user_id=" + user_id);
+                affected = this.Update("game_data", "rest=" + rest + ", energy=" + energy + ", agility=" + agility + ", stress=" + stress + ", heart=" + heart + ", money=" + money + ", xp=" + xp, "user_id=" + user_id);
                 if (affected == 1)
                 {
                     result = affected;
@@ -234,7 +237,7 @@ namespace DigipetServer
         public int FindUserIdByEmail(string email)
         {
             int id = -1;
-            string query = "SELECT user_id FROM User_detail WHERE email='" + email + "'";
+            string query = "SELECT id FROM User WHERE email='" + email + "'";
 
             if (this.OpenConnection())
             {
@@ -243,7 +246,7 @@ namespace DigipetServer
 
                 while (reader.Read())
                 {
-                    id = (int)reader["user_id"];
+                    id = (int)reader["id"];
                 }
 
                 reader.Close();
@@ -277,8 +280,8 @@ namespace DigipetServer
         public string FindEmail(string username)
         {
             string email = "";
-            int id = FindUserId(username);
-            string query = "SELECT email FROM User_detail WHERE user_id='" + id + "'";
+            //int id = FindUserId(username);
+            string query = "SELECT email FROM User WHERE username='" + username + "'";
             if (this.OpenConnection())
             {
                 MySqlCommand command = new MySqlCommand(query, connection);

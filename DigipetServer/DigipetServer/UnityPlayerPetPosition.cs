@@ -16,5 +16,9 @@ namespace DigipetServer
         public string petName;
         public float petPosX;
         public float petPosY;
+        public float petLastPosX;
+        public float petLastPosY;
+        public string timeStartMove;
+        public string petState;
     }
 }

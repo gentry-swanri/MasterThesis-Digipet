@@ -40,7 +40,7 @@ namespace DigipetServer
                 }
 
                 smtp.Port = 587;
-                smtp.Credentials = new System.Net.NetworkCredential("digipetapp@gmail.com", "");
+                smtp.Credentials = new System.Net.NetworkCredential("digipetapp@gmail.com", "digipetpasswordapp");
                 smtp.EnableSsl = true;
 
                 smtp.Send(message);

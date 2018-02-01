@@ -16,10 +16,20 @@ namespace DigipetServer
 
         private float playerPosX;
         private float playerPosY;
+        private float centerPosX;
+        private float centerPosY;
+        private int tileX;
+        private int tileY;
         private bool needCreateMap;
 
         // contain list of player position around specific player
         private List<UnityPlayerPetPosition> listPlayerPos;
+
+        /*
+        // tambahan
+        Random r = new Random();
+        bool firstAddFake = true;
+        */
 
         public PlayerManagement()
         {
@@ -31,6 +41,19 @@ namespace DigipetServer
         {
             playerPosX = float.MinValue;
             playerPosY = float.MinValue;
+
+            /*
+            // tambahan buat cek list player
+            if (firstAddFake)
+            {
+                for (float i = 0; i < 3; i++)
+                {
+                    this.FakeAddPlayer(i, (float)Convert.ToDouble(data.latitude) + (i / 1000000), (float)Convert.ToDouble(data.longitude) + (i / 1000000));
+                }
+                firstAddFake = false;
+            } 
+            // batas tambahan
+            */
 
             Player currentPlayer;
          
@@ -70,6 +93,12 @@ namespace DigipetServer
             this.playerPosX = currentPlayer.GetMapController().GetPosX();
             this.playerPosY = currentPlayer.GetMapController().GetPosY();
 
+            this.centerPosX = currentPlayer.GetMapController().GetCenterPosX();
+            this.centerPosY = currentPlayer.GetMapController().GetCenterPosY();
+
+            this.tileX = currentPlayer.GetMapController().GetTileX();
+            this.tileY = currentPlayer.GetMapController().GetTileY();
+
             ListMapData mapData = currentPlayer.GetMapController().GetListMapData();
 
             return mapData;
@@ -77,14 +106,27 @@ namespace DigipetServer
 
         public void AddPlayer(string username)
         {
-            Player newPlayer = new Player(username, 0, 0, "", 0, 0);
-            newPlayer.SetIsActive(false);
-            listPlayer.Add(newPlayer);
+            Player player = listPlayer.Find(x => x.GetPlayerName() == username);
+            if (player == null)
+            {
+                Player newPlayer = new Player(username, 0, 0, "", 0, 0);
+                newPlayer.SetIsActive(false);
+                listPlayer.Add(newPlayer);
+            }else
+            {
+                player.SetLatitude(0);
+                player.SetLongitude(0);
+                player.GetPet().SetPosX(0);
+                player.GetPet().SetPosY(0);
+            }
+            
         }
 
         public int SetPlayerActive(dynamic data)
         {
             int result = -1;
+            Console.WriteLine((string)data.username);
+            Console.WriteLine(listPlayer.Count);
             Player currentPlayer = listPlayer.Find(x => x.GetPlayerName() == (string)data.username);
             if (currentPlayer != null)
             {
@@ -120,6 +162,7 @@ namespace DigipetServer
             return route;
         }
 
+        /*
         public List<UnityPlayerPetPosition> GetOthersInRange(dynamic data, float range)
         {
             listPlayerPos.Clear();
@@ -132,19 +175,61 @@ namespace DigipetServer
                 Player player = listPlayer.ElementAt<Player>(i);
                 if (player.GetPlayerName() != (string)data.username)
                 {
-                    float[] pos = GeoConverter.GeoCoorToMercatorProjection(player.GetLatitude(), player.GetLongitude());
-                    if (pos[0] < curPlayerPos[0] + range && pos[1] < curPlayerPos[1] + range)
+                    if (player.GetIsActive())
                     {
-                        UnityPlayerPetPosition playerInRange = new UnityPlayerPetPosition();
-                        //playerInRange.playerId = player.GetPlayerId();
-                        playerInRange.playerName = player.GetPlayerName();
-                        playerInRange.posX = pos[0] - curPlayerPos[0];
-                        playerInRange.posY = pos[1] - curPlayerPos[1];
-                        playerInRange.petName = player.GetPet().GetPetName();
-                        playerInRange.petPosX = (player.GetPet().GetPosX() + pos[0]) - curPlayerPos[0];
-                        playerInRange.petPosY = (player.GetPet().GetPosY() + pos[1]) - curPlayerPos[1];
+                        //Console.WriteLine(player.GetPlayerName());
+                        float[] pos = GeoConverter.GeoCoorToMercatorProjection(player.GetLatitude(), player.GetLongitude());
+                        if (pos[0] < curPlayerPos[0] + range && pos[1] < curPlayerPos[1] + range)
+                        {
+                            UnityPlayerPetPosition playerInRange = new UnityPlayerPetPosition();
+                            //playerInRange.playerId = player.GetPlayerId();
+                            playerInRange.playerName = player.GetPlayerName();
+                            playerInRange.posX = pos[0] - curPlayerPos[0];
+                            playerInRange.posY = pos[1] - curPlayerPos[1];
+                            playerInRange.petName = player.GetPet().GetPetName();
+                            playerInRange.petPosX = (player.GetPet().GetPosX() + pos[0]) - curPlayerPos[0];
+                            playerInRange.petPosY = (player.GetPet().GetPosY() + pos[1]) - curPlayerPos[1];
 
-                        listPlayerPos.Add(playerInRange);
+                            listPlayerPos.Add(playerInRange);
+                        }
+                    }
+                }
+            }
+
+            return listPlayerPos;
+        }
+        */
+
+        public List<UnityPlayerPetPosition> GetOthers(dynamic data)
+        {
+            listPlayerPos.Clear();
+            for (int i=0; i<listPlayer.Count; i++)
+            {
+                Player player = listPlayer.ElementAt<Player>(i);
+
+                //Console.WriteLine("player name = "+player.GetPlayerName());
+                //Console.WriteLine("player X = "+ player.GetMapController().GetTileX()+" ;;;; data X = "+ (int)data.tileX);
+                //Console.WriteLine("player Y = " + player.GetMapController().GetTileY() + " ;;;; data Y = " + (int)data.tileY);
+
+                if (player.GetMapController().GetTileX() == (int)data.tileX && player.GetMapController().GetTileY() == (int)data.tileY)
+                {
+                    if (player.GetIsActive())
+                    {
+                        float[] pos = GeoConverter.GeoCoorToMercatorProjection(player.GetLatitude(), player.GetLongitude());
+
+                        UnityPlayerPetPosition playerInList = new UnityPlayerPetPosition();
+                        playerInList.playerName = player.GetPlayerName();
+                        playerInList.posX = pos[0];
+                        playerInList.posY = pos[1];
+                        playerInList.petName = player.GetPet().GetPetName();
+                        playerInList.petPosX = player.GetPet().GetPosX();
+                        playerInList.petPosY = player.GetPet().GetPosY();
+                        playerInList.petLastPosX = player.GetPet().GetLastPosX();
+                        playerInList.petLastPosY = player.GetPet().GetLastPosY();
+                        playerInList.timeStartMove = player.GetPet().GetTimeStartMove();
+                        playerInList.petState = player.GetPet().GetPetState();
+
+                        listPlayerPos.Add(playerInList);
                     }
                 }
             }
@@ -157,10 +242,72 @@ namespace DigipetServer
             Player curPlayer = listPlayer.Find(x => x.GetPlayerName() == (string)data.username);
             if (curPlayer != null)
             {
-                curPlayer.GetPet().SetPosX((float)data.petPosX);
-                curPlayer.GetPet().SetPosY((float)data.petPosY);
+                float lastPosX = curPlayer.GetPet().GetPosX();
+                float lastPosY = curPlayer.GetPet().GetPosY();
+
+                if (lastPosX == 0 && lastPosY == 0)
+                {
+                    curPlayer.GetPet().SetLastPosX(curPlayer.GetMapController().GetCenterPosX());
+                    curPlayer.GetPet().SetLastPosY(curPlayer.GetMapController().GetCenterPosY());
+                }else
+                {
+                    curPlayer.GetPet().SetLastPosX(lastPosX);
+                    curPlayer.GetPet().SetLastPosY(lastPosY);
+                }
+
+                curPlayer.GetPet().SetTimeStartMove((string)data.timeStartMove);
+
+                curPlayer.GetPet().SetPosX((float)data.petPosX + curPlayer.GetMapController().GetCenterPosX());
+                curPlayer.GetPet().SetPosY((float)data.petPosY + curPlayer.GetMapController().GetCenterPosY());
+
+                curPlayer.GetPet().SetPetState((string)data.petState);
+                // tambahan
+                //GetListMember(curPlayer.GetPlayerName());
             }
         }
+
+        /*
+        // batas tambahan buat cek list player
+        private void FakeAddPlayer(float i, float latitude, float longitude)
+        {
+            Player a = new Player("Fake User "+i, latitude, longitude, "Fake Pet "+i, (i / 10f), (i / 10f));
+            a.SetIsActive(true);
+            listPlayer.Add(a);
+        }
+
+        private void GetListMember(string playerName)
+        {
+            for (int i=0; i<listPlayer.Count; i++)
+            {
+                Player a = listPlayer.ElementAt<Player>(i);
+                if (a.GetPlayerName() != playerName)
+                {
+                    float x = a.GetPet().GetPosX();
+                    float y = a.GetPet().GetPosY();
+                    if (r.Next(2) == 0)
+                    {
+                        a.GetPet().SetPosX(x + (float)r.Next(50));
+                    }
+                    else
+                    {
+                        a.GetPet().SetPosX(x - (float)r.Next(50));
+                    }
+
+                    if (r.Next(2) == 0)
+                    {
+                        a.GetPet().SetPosY(y - (float)r.Next(50));
+                    }
+                    else
+                    {
+                        a.GetPet().SetPosY(y + (float)r.Next(50));
+                    }
+
+                    //Console.WriteLine(a.GetPlayerName());
+                }
+            }
+        }
+        // batas terakhir buat cek list player
+        */
 
         public float GetPlayerPosX()
         {
@@ -175,6 +322,26 @@ namespace DigipetServer
         public bool GetNeedCreateMap()
         {
             return this.needCreateMap;
+        }
+
+        public float GetCenterPosX()
+        {
+            return this.centerPosX;
+        }
+
+        public float GetCenterPosY()
+        {
+            return this.centerPosY;
+        }
+
+        public int GetTileX()
+        {
+            return this.tileX;
+        }
+
+        public int GetTileY()
+        {
+            return this.tileY;
         }
     }
 }

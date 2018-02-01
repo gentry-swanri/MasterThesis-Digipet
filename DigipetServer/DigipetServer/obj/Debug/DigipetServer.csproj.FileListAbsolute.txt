@@ -17,5 +17,5 @@ D:\MasterData\MasterThesis-Digipet\DigipetServer\DigipetServer\bin\Debug\Newtons
 D:\MasterData\MasterThesis-Digipet\DigipetServer\DigipetServer\bin\Debug\RabbitMQ.Client.dll
 D:\MasterData\MasterThesis-Digipet\DigipetServer\DigipetServer\bin\Debug\Newtonsoft.Json.xml
 D:\MasterData\MasterThesis-Digipet\DigipetServer\DigipetServer\bin\Debug\RabbitMQ.Client.xml
-D:\MasterData\MasterThesis-Digipet\DigipetServer\DigipetServer\obj\Debug\DigipetServer.csprojResolveAssemblyReference.cache
 D:\MasterData\MasterThesis-Digipet\DigipetServer\DigipetServer\bin\Debug\MySql.Data.dll
+D:\MasterData\MasterThesis-Digipet\DigipetServer\DigipetServer\obj\Debug\DigipetServer.csprojResolveAssemblyReference.cache

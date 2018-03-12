@@ -31,9 +31,6 @@ public class MapController : MonoBehaviour {
     public int tileY;
 
     List<OtherPlayerData> otherPlayerDataList;
-
-    //private string fileName = "MapData.txt";
-    //private string filePath = "";
     private bool firstStart = false;
     private bool firstPet = true;
     public bool okToSentPetPos = false;
@@ -62,41 +59,27 @@ public class MapController : MonoBehaviour {
         this.InitDefaultProperties();
         //this.UpdateGpsAndSendRequest();
         StartCoroutine(this.StartGPS());
-        //StartCoroutine(this.UpdateGPS());
     }
 	
 	// Update is called once per frame
 	void Update () {
 
-        //Debug.Log(this.responseAcquiredAndProcessed);
         if (mapAcquiredAndProcessed)
         {
             this.UpdateGpsAndSendRequest();
         }
 
-        //CheckAndProcessResponse();
-
         OtherPetMovement();
-
-        //Debug.Log("MAP UPDATE");
         
 	}
-
-    /*
-    void OnApplicationPause()
-    {
-        //string requestJson = this.CreateJsonMessage(3);
-        //AmqpClient.Publish(this.requestExchangeName, this.requestRoutingKey, requestJson);
-    }
-    */
 
     // initialize all properties with default value
     void InitDefaultProperties()
     {
         this.uniqueId = Guid.NewGuid().ToString();
         this.playerName = PlayerPrefs.GetString("username");
-        this.latitude = -6.893205f; //-6.8897f; //-6.893126f; //-6.8899006843566898 
-        this.longitude = 107.6277f;//107.61f; //107.6278f;  //107.61004638671875
+        this.latitude = -6.891614f; //-6.893209f; // //-6.891634f; //-6.889852f;
+        this.longitude = 107.627177f; //107.6279f; // //107.627100f; //107.609968f;
         this.lastLatitude = float.MinValue;
         this.lastLongitude = float.MinValue;
         this.petName = PlayerPrefs.GetString("petName");
@@ -125,10 +108,7 @@ public class MapController : MonoBehaviour {
             yield break;
         }
 
-        //if (Input.location.status != LocationServiceStatus.Running)
-        //{
-            Input.location.Start(1f, .1f);
-        //}
+        Input.location.Start(1f, .1f);
 
         int maxWait = 20;
         while (Input.location.status == LocationServiceStatus.Initializing && maxWait > 0)
@@ -156,27 +136,6 @@ public class MapController : MonoBehaviour {
         }
     }
 
-    /*
-    IEnumerator UpdateGPS()
-    {
-        while (true)
-        {
-            if (!Input.location.isEnabledByUser)
-            {
-                print("GPS not enabled");
-                yield break;
-            }
-
-            if (Input.location.status == LocationServiceStatus.Running)
-            {
-                this.latitude = Input.location.lastData.latitude;
-                this.longitude = Input.location.lastData.longitude;
-                yield return new WaitForSeconds(10);
-            } 
-        }   
-    }
-    */
-
     // update latitude and longitude value and send the request to server through rabbitmq
     void UpdateGpsAndSendRequest()
     {
@@ -187,9 +146,6 @@ public class MapController : MonoBehaviour {
 
         if (this.lastLatitude != this.latitude || this.lastLongitude != this.longitude)
         {
-            //Debug.Log(this.lastLatitude + " ------- " + this.latitude);
-            //Debug.Log(this.lastLongitude + " ------- " + this.longitude);
-
             this.lastLatitude = this.latitude;
             this.lastLongitude = this.longitude;
 
@@ -201,17 +157,6 @@ public class MapController : MonoBehaviour {
             this.mapAcquiredAndProcessed = false;
         }    
     }
-
-    /*
-    void UpdatePetPos()
-    {
-        this.petPosX = petObject.transform.position.x;
-        this.petPosY = petObject.transform.position.z;
-
-        string requestJson = CreateUpdatePetPosJsonMessage("listplayer");
-        AmqpClient.Publish(AmqpController.amqpControl.requestExchangeName, AmqpController.amqpControl.requestRoutingKey, requestJson);
-    }
-    */
 
     void StartRouting()
     {
@@ -226,12 +171,8 @@ public class MapController : MonoBehaviour {
     {
         var receivedJson = System.Text.Encoding.UTF8.GetString(received.Message.Body);
         var msg = CymaticLabs.Unity3D.Amqp.SimpleJSON.JSON.Parse(receivedJson);
-        //Debug.Log("Check Process");
-        //var msg = AmqpController.amqpControl.msg;
-        Debug.Log(msg);
         if (msg != null) // check for msg
         {
-            Debug.Log("msg masuk = " + (string)msg["type"]);
             string id = (string)msg["id"];
             if (id == this.uniqueId) // check for guid or unique id
             {
@@ -266,7 +207,6 @@ public class MapController : MonoBehaviour {
                     }
 
                     Vector3 tempCamPos = this.mainCam.transform.position;
-                    //this.mainCam.transform.parent.position = new Vector3(500,40,500);
                     this.mainCam.transform.parent.position = new Vector3((float)msg["playerPosX"], tempCamPos.y, (float)msg["playerPosY"]);
 
                     if (firstPet)
@@ -280,12 +220,8 @@ public class MapController : MonoBehaviour {
                     this.tileX = (int)msg["tileX"];
                     this.tileY = (int)msg["tileY"];
 
-                    //Debug.Log(centerPosX +" -------  "+centerPosY);
-
                     this.okToSentPetPos = true;
                     this.mapAcquiredAndProcessed = true;
-
-                    //AmqpController.amqpControl.msg = null;
                 }
 
                 if (responseType == "route") // response for create route
@@ -293,8 +229,6 @@ public class MapController : MonoBehaviour {
                     Debug.Log("CREATE ROUTE");
                     this.DestroyGameObjectByTagName("RouteObject");
                     CreateRoute(msg["route"]);
-
-                    //AmqpController.amqpControl.msg = null;
                 }
 
                 if (responseType == "maptohome")
@@ -303,151 +237,33 @@ public class MapController : MonoBehaviour {
 
                     if ((int)msg["result"] == 1)
                     {
-                        Debug.Log("MASUK RESULT 1");
-
-                        //GameObject cameraController = GameObject.Find("Main Camera");
-                        //var cameraScript = cameraController.GetComponent<CameraController>();
-
-                        //cameraScript.webcamTexture.Stop();
-                        
-                        Debug.Log("PINDAH SCENE");
-
                         Time.timeScale = 1;
                         SceneManager.LoadScene("MainScene");
                         
                     }
                 }
-
-                /*
-                if (responseType == "listplayer")
-                {
-                    //Debug.Log("listplayer");
-                    UpdateOthersPosition(msg["unityPlayerPos"]);
-
-                    //AmqpController.amqpControl.msg = null;
-                }
-                */
             }
 
             
             if ((string)msg["type"] == "listplayer")
             {
-                //Debug.Log("listplayer");
                 if ((int)msg["tileX"] == this.tileX && (int)msg["tileY"] == this.tileY)
                 {
                     RemoveOtherFromList(msg["unityPlayerPos"]);
                     UpdateOthersPosition(msg["unityPlayerPos"]);
                 }
+            }
 
-                //AmqpController.amqpControl.msg = null;
+            if ((string)msg["type"] == "updateBall")
+            {
+                if ((int)msg["tileX"] == this.tileX && (int)msg["tileY"] == this.tileY)
+                {
+                    UpdateOtherBallState(msg);
+                }
             }
             
         }
     }
-
-
-    /*
-    // received response from server and process it
-    void HandleExchangeMessageReceived(AmqpExchangeReceivedMessage received)
-    {
-        var receivedJson = System.Text.Encoding.UTF8.GetString(received.Message.Body);
-        var msg = CymaticLabs.Unity3D.Amqp.SimpleJSON.JSON.Parse(receivedJson);
-
-        if (msg != null)
-        {
-            // create map
-            if ((int)msg["type"] == 1)
-            {
-                if ((string)msg["id"] == this.uniqueId)
-                {
-                    if ((bool)msg["needCreateMap"])
-                    {
-                        Debug.Log("CREATE MAP");
-                        this.DestroyGameObjectByTagName("MapObject");
-
-                        // old json version
-                        //var buildingData = msg["mapData"]["buildings"]["features"];
-                        //this.CreateBuilding(buildingData);
-                        //var roadData = msg["mapData"]["roads"]["features"];
-                        //this.CreateRoad(roadData);
-                        //var poiData = msg["mapData"]["pois"]["features"];
-                        //this.CreatePOI(poiData);
-
-                        // new json version
-                        var buildingData = msg["mapData"]["listBuildingData"];
-                        this.CreateBuilding(buildingData);
-                        var roadData = msg["mapData"]["listRoadData"];
-                        this.CreateRoad(roadData);
-
-                        //this.WriteFile(receivedJson);
-                    }
-                    else
-                    {
-                        //if (firstStart)
-                        //{
-                        //    string json = this.ReadFile();
-                        //    var msgLoaded = CymaticLabs.Unity3D.Amqp.SimpleJSON.JSON.Parse(json);
-
-                        //    this.DestroyGameObjectByTagName("MapObject");
-
-                        //    var buildingData = msgLoaded["mapData"]["buildings"]["features"];
-                        //    this.CreateBuilding(buildingData);
-                        //    var roadData = msgLoaded["mapData"]["roads"]["features"];
-                        //    this.CreateRoad(roadData);
-                        //    var poiData = msgLoaded["mapData"]["pois"]["features"];
-                        //    this.CreatePOI(poiData);
-
-                        //    this.firstStart = false;
-                        //}
-
-                        if (firstStart)
-                        {
-                            Debug.Log("CREATE MAP FIRST START");
-                            this.DestroyGameObjectByTagName("MapObject");
-
-                            // old json version
-                            //var buildingData = msg["mapData"]["buildings"]["features"];
-                            //this.CreateBuilding(buildingData);
-                            //var roadData = msg["mapData"]["roads"]["features"];
-                            //this.CreateRoad(roadData);
-                            //var poiData = msg["mapData"]["pois"]["features"];
-                            //this.CreatePOI(poiData);
-
-                            var buildingData = msg["mapData"]["listBuildingData"];
-                            this.CreateBuilding(buildingData);
-                            var roadData = msg["mapData"]["listRoadData"];
-                            this.CreateRoad(roadData);
-
-                            this.firstStart = false;
-                        }
-                    }
-
-                    Vector3 tempCamPos = this.mainCam.transform.position;
-                    this.mainCam.transform.position = new Vector3((float)msg["playerPosX"], tempCamPos.y, (float)msg["playerPosY"]);
-                    this.responseAcquiredAndProcessed = true;
-                }
-            }
-
-            // create route path
-            if ((int)msg["type"] == 3)
-            {
-                if ((string)msg["id"] == this.uniqueId)
-                {
-                    Debug.Log("CREATE ROUTE");
-                    CreateRoute(msg["route"]);
-                }
-            }
-
-            // create or update pet for other player in range
-            if ((int)msg["type"] == 6)
-            {
-
-            }
-        }
-
-        //Debug.Log("Request Exchange Message : " + receivedJson);
-    }
-    */
 
     void RemoveOtherFromList(CymaticLabs.Unity3D.Amqp.SimpleJSON.JSONNode data)
     {
@@ -460,10 +276,8 @@ public class MapController : MonoBehaviour {
             for (int j=0; j<data.Count; j++)
             {
                 string otherName = (string)data[j]["playerName"];
-                Debug.Log("cur list name = "+other.playerName + " ;;; data list name = "+otherName);
                 if (other.playerName == otherName)
                 {
-                    Debug.Log("Nama Sama");
                     found = true;
                     break;
                 }
@@ -477,15 +291,16 @@ public class MapController : MonoBehaviour {
             found = false;
         }
 
-        Debug.Log("Remove Count = "+ removeList.Count);
+        Debug.Log("Remove = "+ removeList.Count);
 
         for (int i=0; i<removeList.Count; i++)
         {
             OtherPlayerData remove = removeList[i];
 
             GameObject otherPlayer = GameObject.Find(remove.playerName);
-            GameObject otherPetPlayer = GameObject.Find(remove.playerName + "_" + remove.petName);
+            GameObject otherPetPlayer = GameObject.Find("pet_" + remove.playerName);
             GameObject food = GameObject.Find("food_" + remove.playerName);
+            GameObject ball = GameObject.Find("ball_" + remove.playerName);
             if (otherPlayer != (GameObject)null)
             {
                 Destroy(otherPlayer);
@@ -498,17 +313,17 @@ public class MapController : MonoBehaviour {
             {
                 Destroy(food);
             }
+            if (ball != (GameObject)null)
+            {
+                Destroy(ball);
+            }
 
             otherPlayerDataList.Remove(remove);
         }
-
-        Debug.Log("Finished Check Delete");
     }
 
     void UpdateOthersPosition(CymaticLabs.Unity3D.Amqp.SimpleJSON.JSONNode data)
     {
-        Debug.Log("list player respones");
-
         for (int i=0; i<data.Count; i++)
         {
             string otherUsername = (string)data[i]["playerName"];
@@ -520,16 +335,13 @@ public class MapController : MonoBehaviour {
             float otherPetLastPosX = (float)data[i]["petLastPosX"];
             float otherPetLastPosY = (float)data[i]["petLastPosY"];
             string otherStartTimeMoveString = (string)data[i]["timeStartMove"];
-            long otherStartTimeMove = Convert.ToInt64(otherStartTimeMoveString);
+            long otherStartTimeMove = 0L;
+            if (otherStartTimeMoveString != "")
+            {
+                otherStartTimeMove = Convert.ToInt64(otherStartTimeMoveString);
+            }
             string otherPetState = (string)data[i]["petState"];
-
-            //Debug.Log(centerPosX+" Center Mercator X");
-            //Debug.Log(centerPosY+" Center Mercator Y");
-            //Debug.Log(otherPetPosX+" otherPetPosX");
-            //Debug.Log(otherPetPosY+" otherPetPosY");
-
-            Debug.Log("main player = "+this.playerName);
-            Debug.Log("other player = "+otherUsername);
+            float otherPetSpeed = (float)data[i]["petSpeed"];
 
             if (otherUsername != this.playerName)
             {
@@ -542,8 +354,6 @@ public class MapController : MonoBehaviour {
                     newOtherPlayer.posY = otherPosY - this.centerPosY;
                     newOtherPlayer.petName = otherPetName;
                     newOtherPlayer.petState = otherPetState;
-                    //newOtherPlayer.petPosX = (otherPetPosX + otherPosX) - this.realPosX;
-                    //newOtherPlayer.petPosY = (otherPetPosY + otherPosY) - this.realPosY;
 
                     float mapPetLastPosX = otherPetLastPosX - this.centerPosX;
                     float mapPetLastPosY = otherPetLastPosY - this.centerPosY;
@@ -552,15 +362,13 @@ public class MapController : MonoBehaviour {
                     Vector3 mapPetLastPos = new Vector3(mapPetLastPosX, 0.0f, mapPetLastPosY);
                     Vector3 mapPetPos = new Vector3(mapPetPosX, 0.0f, mapPetPosY);
                     float totalDistance = Vector3.Distance(mapPetLastPos, mapPetPos);
+                    float distanceTraveled = 0.0f;
 
-                    double seconds = (DateTime.Now - new DateTime(otherStartTimeMove)).TotalSeconds;
-                    Debug.Log(seconds);
-                    //float distanceTraveled = (float)(seconds * Time.deltaTime * 1f);
-                    float distanceTraveled = (float)(seconds * 1f);
-
-                    Debug.Log(distanceTraveled+" --- distance traveled");
-                    Debug.Log(totalDistance+" --- total distance");
-                    Debug.Log(seconds+"  --- time seconds");
+                    if (otherStartTimeMove != 0L)
+                    {
+                        double seconds = (DateTime.Now - new DateTime(otherStartTimeMove)).TotalSeconds;
+                        distanceTraveled = (float)(seconds * otherPetSpeed);
+                    }
 
                     Vector3 predictedPos;
                     if (distanceTraveled >= totalDistance)
@@ -582,11 +390,13 @@ public class MapController : MonoBehaviour {
                         newOtherPlayer.petToPosY = mapPetPosY;
                     }
 
+                    newOtherPlayer.petSpeed = otherPetSpeed;
+
                     otherPlayerDataList.Add(newOtherPlayer);
 
                     // belum ada nama pet
                     GameObject NewPetObject = Instantiate(Resources.Load("PetPrefab")) as GameObject;
-                    NewPetObject.name = otherUsername+"_"+otherPetName;
+                    NewPetObject.name = "pet_" + otherUsername;
                     NewPetObject.transform.position = new Vector3(predictedPos.x, 0.0f, predictedPos.z);
 
                     GameObject petName = NewPetObject.transform.Find("PetNameText").gameObject;
@@ -619,33 +429,46 @@ public class MapController : MonoBehaviour {
                     other.petToPosX = otherPetPosX - this.centerPosX;
                     other.petToPosY = otherPetPosY - this.centerPosY;
                     other.petState = otherPetState;
-                    //Debug.Log("luar = "+other.petState);
+                    other.petSpeed = otherPetSpeed;
                     if (other.petState == "walkFood")
                     {
-                        //Debug.Log("dalam = "+other.petState);
                         GameObject food = GameObject.CreatePrimitive(PrimitiveType.Cube);
                         food.name = "food_"+other.playerName;
                         food.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
                         food.transform.position = new Vector3(other.petToPosX, 0, other.petToPosY);
                     }
 
-                    /*
-                    GameObject curPetObject = GameObject.Find(otherPetName);
-                    //curPetObject.GetComponent<PetController2>().enabled = false;
-
-                    Vector3 lookpos = new Vector3(other.petToPosX, 0.0f, other.petToPosY) - curPetObject.transform.position;
-                    lookpos.y = 0;
-                    if (lookpos != Vector3.zero)
+                    if (other.petState == "walktoball")
                     {
-                        var rotation = Quaternion.LookRotation(lookpos);
-                        curPetObject.transform.rotation = Quaternion.Slerp(curPetObject.transform.rotation, rotation, Time.deltaTime * 2.0f);
+                        GameObject otherBallFound = GameObject.Find("ball_" + otherUsername);
+                        if (otherBallFound == (GameObject)null)
+                        {
+                            GameObject otherBall = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                            otherBall.name = "ball_" + otherUsername;
+                            otherBall.transform.localScale = new Vector3(0.2f, 0.2f, 0.2f);
+                            otherBall.transform.position = new Vector3(other.petToPosX, 0.0f, other.petToPosY);
+
+                            Rigidbody ballRigibody = otherBall.AddComponent<Rigidbody>();
+                            ballRigibody.mass = 1;
+                            ballRigibody.isKinematic = true;
+                        }
                     }
 
-                    curPetObject.transform.position = Vector3.MoveTowards(curPetObject.transform.position, new Vector3(other.petToPosX, 0.0f, other.petToPosY), Time.deltaTime * 2.0f);
-                    */
+                    if (other.petState == "walkbringball")
+                    {
+                        GameObject otherBall = GameObject.Find("ball_" + otherUsername);
+                        GameObject otherPet = GameObject.Find("pet_" + otherUsername);
+
+                        otherBall.transform.position = otherPet.transform.position;
+                        otherBall.transform.parent = otherPet.transform;
+                    }
 
                     GameObject otherPlayer = GameObject.Find(otherUsername);
-                    otherPlayer.transform.position = new Vector3(otherPosX - this.centerPosX, 10.0f, otherPosY - centerPosY);
+                    if (otherPlayer != (GameObject)null)
+                    {
+                        otherPlayer.transform.position = new Vector3(otherPosX - this.centerPosX, 10.0f, otherPosY - centerPosY);
+                    }
+                    
                 }
             }
         }
@@ -656,19 +479,13 @@ public class MapController : MonoBehaviour {
     {
         for (int i=0; i<otherPlayerDataList.Count; i++)
         {
-            //Debug.Log("OTHER PLAYER LIST COUNT = "+otherPlayerDataList.Count);
-
             OtherPlayerData player = (OtherPlayerData)otherPlayerDataList[i];
 
             if (player.playerName != this.playerName)
             {
-                //Debug.Log("BUKAN MAIN PLAYER");
-                //Debug.Log(player.petPosX);
-                //Debug.Log(player.petPosY);
-
-                if (player.petState == "walk" || player.petState == "walkFood")
+                if (player.petState == "walk" || player.petState == "walkFood" || player.petState == "call" || player.petState == "walktoball" || player.petState == "walkbringball")
                 {
-                    GameObject curPetObject = GameObject.Find(player.playerName+"_"+player.petName);
+                    GameObject curPetObject = GameObject.Find("pet_" + player.playerName);
                     Animator anim = curPetObject.GetComponent<Animator>();
                     anim.runtimeAnimatorController = Resources.Load("AnimationController/PetWalkController") as RuntimeAnimatorController;
 
@@ -680,11 +497,10 @@ public class MapController : MonoBehaviour {
                         curPetObject.transform.rotation = Quaternion.Slerp(curPetObject.transform.rotation, rotation, Time.deltaTime * 2.0f);
                     }
 
-                    curPetObject.transform.position = Vector3.MoveTowards(curPetObject.transform.position, new Vector3(player.petToPosX, 0.0f, player.petToPosY), Time.deltaTime * 1.0f);
+                    curPetObject.transform.position = Vector3.MoveTowards(curPetObject.transform.position, new Vector3(player.petToPosX, 0.0f, player.petToPosY), Time.deltaTime * player.petSpeed);
                 }else if (player.petState == "eatFood")
                 {
-                    //Debug.Log("masuk eat food");
-                    Animator anim = GameObject.Find(player.playerName + "_" + player.petName).GetComponent<Animator>();
+                    Animator anim = GameObject.Find("pet_" + player.playerName).GetComponent<Animator>();
                     anim.runtimeAnimatorController = Resources.Load("AnimationController/PetEatController") as RuntimeAnimatorController;
                     GameObject food = GameObject.Find("food_" + player.playerName);
                     if (food != (GameObject)null)
@@ -693,8 +509,49 @@ public class MapController : MonoBehaviour {
                     }
                     
                 }
-
                 
+            }
+        }
+    }
+
+    void UpdateOtherBallState(CymaticLabs.Unity3D.Amqp.SimpleJSON.JSONNode data)
+    {
+        Debug.Log("Update Ball State");
+
+        string otherUsername = (string)data["username"];
+        string otherBallState = (string)data["ballState"];
+        float ballPosX = (float)data["ballPosX"];
+        float ballPosY = (float)data["ballPosY"];
+        float ballPosZ = (float)data["ballPosZ"];
+
+        if (otherUsername != this.playerName)
+        {
+            if (otherBallState == "live")
+            {
+                GameObject otherBall = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                otherBall.name = "ball_" + otherUsername;
+                otherBall.transform.localScale = new Vector3(0.2f, 0.2f, 0.2f);
+                otherBall.transform.position = new Vector3(ballPosX - this.centerPosX, 10.0f, ballPosZ - this.centerPosY);
+
+                Rigidbody ballRigibody = otherBall.AddComponent<Rigidbody>();
+                ballRigibody.mass = 1;
+                ballRigibody.isKinematic = true;
+            }
+            else if (otherBallState == "none")
+            {
+                GameObject otherBall = GameObject.Find("ball_" + otherUsername);
+                Destroy(otherBall);
+            }else if (otherBallState == "throw")
+            {
+                GameObject otherBall = GameObject.Find("ball_" + otherUsername);
+                otherBall.transform.position = otherBall.transform.position + new Vector3(ballPosX, ballPosY, ballPosZ) * (Camera.main.nearClipPlane + 2f);
+                otherBall.GetComponent<Rigidbody>().isKinematic = false;
+                otherBall.GetComponent<Rigidbody>().velocity = new Vector3(ballPosX, ballPosY, ballPosZ) * 5;
+            }else if (otherBallState == "inground")
+            {
+                GameObject otherBall = GameObject.Find("ball_" + otherUsername);
+                otherBall.GetComponent<Rigidbody>().isKinematic = true;
+                otherBall.transform.position = new Vector3(ballPosX - this.centerPosX, 0.0f, ballPosZ - this.centerPosY);
             }
         }
     }
@@ -718,35 +575,6 @@ public class MapController : MonoBehaviour {
     // create building's mesh and name based on data from response
     void CreateBuilding(CymaticLabs.Unity3D.Amqp.SimpleJSON.JSONNode buildingData)
     {
-        // old create building version
-        //List<Vector3> point = new List<Vector3>();
-        //List<Vector2> point2d = new List<Vector2>();
-        //for (int i=0; i<buildingData.Count; i++)
-        //{
-        //    var tempData = buildingData[i];
-        //    if ((string)tempData["geometry"]["type"] == "Polygon")
-        //    {
-        //        for (int j=0; j<tempData["geometry"]["coordinates"][0].Count - 1; j++)
-        //        {
-        //            var coordinate = tempData["geometry"]["coordinates"][0][j];
-        //            point.Add(new Vector3((float)coordinate[1], 0.0f, (float)coordinate[0]));
-        //            point2d.Add(new Vector2((float)coordinate[0], (float)coordinate[1]));
-        //        }
-
-        //        this.CreatePolygon(point2d.ToArray(), point.ToArray(), Color.green, "MapObject", "building");
-
-        //        point.Clear();
-        //        point2d.Clear();
-        //    }
-        //    if ((string)tempData["geometry"]["type"] == "Point")
-        //    {
-        //        string buildingNames = (string)tempData["properties"]["name"];
-        //        var coordinate = tempData["geometry"]["coordinates"];
-        //        this.ShowName(new Vector3((float)coordinate[1], 0.0f, (float)coordinate[0]), new Vector3(), buildingNames, "MapObject", "buildingName", Color.black);
-        //    }
-        //}
-
-        // new create building version
         List<Vector3> point = new List<Vector3>();
         List<Vector2> point2d = new List<Vector2>();
         for (int i=0; i<buildingData.Count; i++)
@@ -783,38 +611,6 @@ public class MapController : MonoBehaviour {
     // create road's mesh and name based on response 
     void CreateRoad(CymaticLabs.Unity3D.Amqp.SimpleJSON.JSONNode roadData)
     {
-        // old create road version
-        //List<Vector3[]> point = new List<Vector3[]>();
-        //List<string> names = new List<string>();
-        //for (int i=0; i<roadData.Count; i++)
-        //{
-        //    var tempData = roadData[i];
-        //    if ((string)tempData["geometry"]["type"] == "LineString")
-        //    {
-        //        Vector3[] perPoint = new Vector3[tempData["geometry"]["coordinates"].Count];
-        //        for (int j=0; j< tempData["geometry"]["coordinates"].Count; j++)
-        //        {
-        //            var coordinate = tempData["geometry"]["coordinates"][j];
-        //            perPoint[j] = new Vector3((float)coordinate[1], 0.1f, (float)coordinate[0]);
-        //        }
-
-        //        point.Add(perPoint);
-        //        names.Add((string)tempData["properties"]["name"]);
-        //    }
-        //}
-
-        //for (int k = 0; k < point.Count; k++)
-        //{
-        //    string roadName = names[k];
-        //    Vector3[] tempVector = point[k];
-        //    for (int l = 0; l < tempVector.Length - 1; l++)
-        //    {
-        //        CreateRoadWaterMesh(tempVector[l], tempVector[l + 1], 2.0f, "MapObject", Color.red, "road");
-        //        this.ShowName(tempVector[l], tempVector[l + 1], roadName, "MapObject", "roadName", Color.black);
-        //    }
-        //}
-
-        // new create road version
         List<Vector3[]> point = new List<Vector3[]>();
         List<string> names = new List<string>();
         for (int i=0; i<roadData.Count; i++)
@@ -843,13 +639,7 @@ public class MapController : MonoBehaviour {
             Vector3[] tempVector = point[k];
             for (int l = 0; l < tempVector.Length - 1; l++)
             {
-                //CreateRoadWaterMesh(tempVector[l], tempVector[l + 1], 10.0f, "MapObject", Color.red, "road");
-                /*
-                if (roadName != null)
-                {
-                    this.ShowName(tempVector[l], tempVector[l + 1], roadName, "MapObject", "roadName", Color.green);
-                }
-                */
+                //CreateRoadWaterMesh(tempVector[l], tempVector[l + 1], 2.0f, "MapObject", Color.red, "road");
 
                 Vector3 tempNamePos = Vector3.Lerp(tempVector[l], tempVector[l+1], 0.5f);
                 float tempDistance = Vector3.Distance(this.mainCam.transform.parent.position, tempNamePos);
@@ -869,23 +659,6 @@ public class MapController : MonoBehaviour {
             distance = float.MaxValue;
         }
     }
-
-    /*
-    // create poi's name based on response
-    void CreatePOI(CymaticLabs.Unity3D.Amqp.SimpleJSON.JSONNode poiData)
-    {
-        for (int i=0; i<poiData.Count; i++)
-        {
-            var tempData = poiData[i];
-            var coordinate = tempData["geometry"]["coordinates"];
-            var poiName = (string)tempData["properties"]["name"];
-            if (poiName != null)
-            {
-                this.ShowName(new Vector3((float)coordinate[1], 0.0f, (float)coordinate[0]), new Vector3(), poiName, "MapObject", "poiName", Color.black);
-            }
-        }
-    }
-    */
 
     // create building mesh
     void CreatePolygon(Vector2[] points2D, Vector3[] points, Color color, string tagName, string typeName)
@@ -958,7 +731,7 @@ public class MapController : MonoBehaviour {
         m.RecalculateNormals();
         //MeshUtility.Optimize(m);
 
-
+        /*
         // create circle at the end of road
         GameObject goCircle = new GameObject(typeName + "_circle");
         goCircle.tag = tagName;
@@ -1002,6 +775,7 @@ public class MapController : MonoBehaviour {
         mfCircle.mesh = RevertNormals(mCircle);
         mCircle.RecalculateBounds();
         mCircle.RecalculateNormals();
+        */
     }
 
     // show the name of building, road, and poi
@@ -1025,23 +799,15 @@ public class MapController : MonoBehaviour {
 
         if (typeName == "roadName")
         {
-            //go.transform.position = Vector3.Lerp(textPosStart, textPosEnd, 0.5f);
-            ////Vector3 temp = Vector3.Lerp(textPosStart, textPosEnd, 0.5f);
-            ////go.transform.position = new Vector3(temp.x, 0.11f, temp.z);
-            //go.AddComponent<NameController>();
             text.text = "<road>\n"+objectName;
             go.transform.position = Vector3.Lerp(textPosStart, textPosEnd, 0.5f);
             go.AddComponent<NameController>();
-            //Vector3 direction = (textPosEnd - textPosStart).normalized;
-            //go.transform.rotation = Quaternion.LookRotation(direction);
-            //go.transform.Rotate(new Vector3(90, textPosEnd.z < textPosStart.z ? -90 : 90, 0));
         }
         else if (typeName == "buildingName" || typeName == "poiName")
         {
             text.text = "<building/poi>\n" + objectName;
             go.transform.position = textPosStart;
             go.AddComponent<NameController>();
-            //text.characterSize = 10.0f;
         }
         
     }
@@ -1109,65 +875,6 @@ public class MapController : MonoBehaviour {
         return JsonUtility.ToJson(routeRequestJson);
     }
 
-    /*
-    string CreateUpdatePetPosJsonMessage(string type)
-    {
-        UpdatePetPosJson updatePetRequest = new UpdatePetPosJson();
-        updatePetRequest.id = this.uniqueId;
-        updatePetRequest.type = type;
-        updatePetRequest.username = this.playerName;
-        updatePetRequest.petPosX = this.petPosX;
-        updatePetRequest.petPosY = this.petPosY;
-
-        return JsonUtility.ToJson(updatePetRequest);
-    }
-    */
-
-    //void WriteFile(string msg)
-    //{
-    //    if (Application.platform == RuntimePlatform.Android || Application.platform == RuntimePlatform.IPhonePlayer)
-    //    {
-    //        filePath = Application.persistentDataPath;
-    //    }
-    //    else
-    //    {
-    //        filePath = Application.dataPath;
-    //    }
-
-    //    bool exist = File.Exists(filePath + "/" + fileName);
-    //    if (exist)
-    //    {
-    //        File.Delete(filePath + "/" + fileName);
-    //    }
-
-    //    var sr = File.CreateText(filePath + "/" + fileName);
-    //    sr.WriteLine(msg);
-    //    sr.Close();
-    //}
-
-    //string ReadFile()
-    //{
-    //    string json = "";
-
-    //    if (Application.platform == RuntimePlatform.Android || Application.platform == RuntimePlatform.IPhonePlayer)
-    //    {
-    //        filePath = Application.persistentDataPath;
-    //    }
-    //    else
-    //    {
-    //        filePath = Application.dataPath;
-    //    }
-
-    //    bool exist = File.Exists(filePath + "/" + fileName);
-    //    if (exist)
-    //    {
-    //        var sr = File.OpenText(filePath + "/" + fileName);
-    //        json = sr.ReadLine();
-    //    }
-
-    //    return json;
-    //}
-
     // --------------------------------- Inner class for JSON serialization as rabbitmq message ----------------------------------------------- //
 
     [Serializable]
@@ -1194,18 +901,6 @@ public class MapController : MonoBehaviour {
         public string destination;
     }
 
-    /*
-    [Serializable]
-    public class UpdatePetPosJson
-    {
-        public string id;
-        public string type;
-        public string username;
-        public float petPosX;
-        public float petPosY;
-    }
-    */
-
     public class OtherPlayerData
     {
         public string playerName;
@@ -1217,5 +912,6 @@ public class MapController : MonoBehaviour {
         public float petFromPosX;
         public float petFromPosY;
         public string petState;
+        public float petSpeed;
     }
 }

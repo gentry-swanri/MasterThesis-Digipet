@@ -68,7 +68,6 @@
     <Compile Include="PolylineDecoder.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="APIObject.cs" />
     <Compile Include="PlayerManagement.cs" />
     <Compile Include="RoadData.cs" />
     <Compile Include="RouteManagement.cs" />

@@ -8,8 +8,6 @@ namespace DigipetServer
 {
     class UnityPlayerPetPosition
     {
-
-        //public string playerId;
         public string playerName;
         public float posX;
         public float posY;
@@ -20,5 +18,7 @@ namespace DigipetServer
         public float petLastPosY;
         public string timeStartMove;
         public string petState;
+        public string ballState;
+        public float petSpeed;
     }
 }

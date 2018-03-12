@@ -20,9 +20,6 @@ public class AmqpController : MonoBehaviour {
 
     public AmqpExchangeSubscription exchangeSubscription;
 
-    // response message
-    //public CymaticLabs.Unity3D.Amqp.SimpleJSON.JSONNode msg;
-
     void Awake()
     {
         if (amqpControl == null)
@@ -39,9 +36,6 @@ public class AmqpController : MonoBehaviour {
     void Start () {
         serverConnected = false;
 
-        // intialize response message with null
-        //msg = null;
-
         // initialize connection properties
         requestExchangeName = "DigipetRequestExchange";
         requestRoutingKey = "DigipetRequestRoutingKey";
@@ -49,11 +43,8 @@ public class AmqpController : MonoBehaviour {
         responseExchangeName = "DigipetResponseExchange";
         responseRoutingKey = "DigipetResponseRoutingKey";
         responseExchangeType = AmqpExchangeTypes.Direct;
-        //responseExchangeType = AmqpExchangeTypes.Fanout;
 
         // connect to rabbitmq server
-
-        //AmqpClient.Instance.ConnectOnStart = true;
         AmqpClient.Instance.Connection = "ITB";
         //AmqpClient.Instance.Connection = "localhost";
         AmqpClient.Connect();
@@ -70,30 +61,16 @@ public class AmqpController : MonoBehaviour {
     // subscribe to rabbitmq exchange if connection is successful
     void HandleConnected(AmqpClient clientParam)
     {
-        //Debug.Log("Connect");
         // subscribe to exchange for listening response's purpose
         exchangeSubscription = new AmqpExchangeSubscription(responseExchangeName, responseExchangeType, responseRoutingKey, HandleExchangeMessageReceived);
         AmqpClient.Subscribe(exchangeSubscription);
 
         serverConnected = true;
-
-        /*
-        GameObject a = GameObject.Find("Test");
-        Text b = a.GetComponent<Text>();
-        b.text = "CONNECTED";
-
-        Debug.Log("Connect");
-        */
-
-        // testing publish message to server
-        // AmqpClient.Publish(this.requestExchangeName, this.requestRoutingKey, "test");
     }
 
     void HandleExchangeMessageReceived(AmqpExchangeReceivedMessage received)
     {
         var receivedJson = System.Text.Encoding.UTF8.GetString(received.Message.Body);
-        Debug.Log("JSON Murni = "+receivedJson);
         var msg = CymaticLabs.Unity3D.Amqp.SimpleJSON.JSON.Parse(receivedJson);
-        Debug.Log("JSON Decode = "+msg);
     }
 }

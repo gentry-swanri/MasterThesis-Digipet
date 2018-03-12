@@ -15,6 +15,8 @@ namespace DigipetServer
         private float lastPosY;
         private string timeStartMove;
         private string petState;
+        private string ballState;
+        private float speed;
 
         public Pet(string petName, float posX, float posY)
         {
@@ -25,6 +27,8 @@ namespace DigipetServer
             this.lastPosY = 0f;
             this.timeStartMove = "";
             this.petState = "";
+            this.ballState = "";
+            this.speed = 0.0f;
         }
 
         public void SetPetName(string petName)
@@ -95,6 +99,26 @@ namespace DigipetServer
         public string GetPetState()
         {
             return this.petState;
+        }
+
+        public void SetBallState(string ballState)
+        {
+            this.ballState = ballState;
+        }
+
+        public string GetBallState()
+        {
+            return this.ballState;
+        }
+
+        public void SetSpeed(float speed)
+        {
+            this.speed = speed;
+        }
+
+        public float GetSpeed()
+        {
+            return this.speed;
         }
     }
 }

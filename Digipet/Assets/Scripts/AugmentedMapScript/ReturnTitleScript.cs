@@ -28,11 +28,8 @@ public class ReturnTitleScript : MonoBehaviour {
     {
         var receivedJson = System.Text.Encoding.UTF8.GetString(received.Message.Body);
         var msg = CymaticLabs.Unity3D.Amqp.SimpleJSON.JSON.Parse(receivedJson);
-
-        //var msg = AmqpController.amqpControl.msg;
         if (msg != null)
         {
-            //Debug.Log(msg);
             string responseId = (string)msg["id"];
             if (id == responseId)
             {
@@ -42,22 +39,15 @@ public class ReturnTitleScript : MonoBehaviour {
                     int result = (int)msg["result"];
                     if (result == 1)
                     {
-                        //AmqpController.amqpControl.msg = null;
-                        //DataControllerScript.dataController.isLogin = false;
-                        //PlayerPrefs.DeleteAll();
                         SceneManager.LoadScene("MainMenuScene");
                     }
                 }
             }
-
-            //msg = null;
         }
     }
 
     public void returnTitle()
     {
-        //Debug.Log("masuk return title");
-        
         AmqpController.amqpControl.exchangeSubscription.Handler = ProcessReturnTitle;
 
         ReturnTitleJson request = new ReturnTitleJson();

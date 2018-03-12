@@ -198,4 +198,6 @@ public class SlidingUI : MonoBehaviour {
         if (cg!= null)
             cg.interactable = true;
 	}
+
+
 }

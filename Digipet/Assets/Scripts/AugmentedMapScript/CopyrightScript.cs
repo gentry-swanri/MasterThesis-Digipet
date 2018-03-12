@@ -11,7 +11,7 @@ public class CopyrightScript : MonoBehaviour {
 	void Start () {
         copyrightText = this.GetComponent<Text>();
         string copyrightSymbol = "\u00A9";
-        copyrightText.text = copyrightSymbol + " Mapzen, OpenStreetMap, and others";
+        copyrightText.text = copyrightSymbol + " OpenStreetMap contributors";
 	}
 	
 	// Update is called once per frame
@@ -19,8 +19,4 @@ public class CopyrightScript : MonoBehaviour {
 		
 	}
 
-    void HandleTextClick()
-    {
-        Application.OpenURL("https://mapzen.com/rights/");
-    }
 }

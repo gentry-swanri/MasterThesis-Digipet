@@ -34,8 +34,7 @@ public class LoginScript : MonoBehaviour {
     {
         var receivedJson = System.Text.Encoding.UTF8.GetString(received.Message.Body);
         var msg = CymaticLabs.Unity3D.Amqp.SimpleJSON.JSON.Parse(receivedJson);
-
-        //var msg = AmqpController.amqpControl.msg;
+        
         if (msg != null)
         {
             string msgId = (string)msg["id"];
@@ -48,7 +47,6 @@ public class LoginScript : MonoBehaviour {
                     if (count == 1)
                     {
                         LoadStatus(msg);
-                        //AmqpController.amqpControl.msg = null;
                         Time.timeScale = 1;
                         SceneManager.LoadScene("MainScene");
                     }
@@ -81,8 +79,7 @@ public class LoginScript : MonoBehaviour {
         {
             warning.text = "password cannot be empty";
         }
-
-        //Debug.Log(username+" ----- "+password);
+        
         if (username != "" && password != "") {
             AmqpController.amqpControl.exchangeSubscription.Handler = ProcessLogin;
 
@@ -100,17 +97,6 @@ public class LoginScript : MonoBehaviour {
 
     void LoadStatus(CymaticLabs.Unity3D.Amqp.SimpleJSON.JSONNode msg)
     {
-        /*
-        DataControllerScript.dataController.username = (string)msg["username"];
-        DataControllerScript.dataController.heart = (int)msg["data"][0];
-        DataControllerScript.dataController.money = (int)msg["data"][1];
-        DataControllerScript.dataController.xp = (int)msg["data"][2];
-        DataControllerScript.dataController.rest = (int)msg["data"][3];
-        DataControllerScript.dataController.energy = (int)msg["data"][4];
-        DataControllerScript.dataController.agility = (int)msg["data"][5];
-        DataControllerScript.dataController.stress = (int)msg["data"][6];
-        DataControllerScript.dataController.petName = (string)msg["data"][7];
-        */
 
         PlayerPrefs.SetString("username", (string)msg["username"]);
         PlayerPrefs.SetInt("Health", (int)msg["data"][0]);
@@ -121,8 +107,6 @@ public class LoginScript : MonoBehaviour {
         PlayerPrefs.SetInt("Walk", (int)msg["data"][5]);
         PlayerPrefs.SetInt("Fun", (int)msg["data"][6]);
         PlayerPrefs.SetString("petName", (string)msg["data"][7]);
-
-        //DataControllerScript.dataController.isLogin = true;
     }
 
     [Serializable]

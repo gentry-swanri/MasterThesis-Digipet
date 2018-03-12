@@ -9,12 +9,9 @@ using CymaticLabs.Unity3D.Amqp;
 public class MapToHomeScript : MonoBehaviour {
 
     private Button homeButton;
-    //public string id;
 
     // Use this for initialization
     void Start () {
-        //id = Guid.NewGuid().ToString();
-
         homeButton = this.GetComponent<Button>();
         homeButton.onClick.AddListener(ReturnHome);
 	}

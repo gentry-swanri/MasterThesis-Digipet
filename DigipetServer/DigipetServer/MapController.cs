@@ -11,9 +11,11 @@ namespace DigipetServer
 {
     class MapController
     {
-        private string format = "json";                                                                                 // format data of mapzen vector tile
-        private string mapzenApiKey = "mapzen-KhT9o6J";                                                                 // mapzen api key. get the api key by sign up to mapzen
-        private string mapzenUrl = "http://tile.mapzen.com/mapzen/vector/v1/{0}/{1}/{2}/{3}.{4}?api_key={5}";           // mapzen vector tile url. 0 => layers, 1 => zoom level, 2 => x tile coordinate, 3 => y tile coordinate, 4 => vector tile data format, 5 => mapzen api key
+        private string format = "geojson";                                                                                 // format data of mapzen vector tile
+        private string url = "http://167.205.7.235:8080/geoserver/gwc/service/tms/1.0.0/mapproject%3Abdg_planet_osm_roads@EPSG%3A900913@geojson/{0}/{1}/{2}.{3}";
+        private string urlLine = "http://167.205.7.235:8080/geoserver/gwc/service/tms/1.0.0/mapproject%3Abdg_planet_osm_line@EPSG%3A900913@geojson/{0}/{1}/{2}.{3}";
+        private string urlPolygon = "http://167.205.7.235:8080/geoserver/gwc/service/tms/1.0.0/mapproject%3Abandung_planet_osm_polygon@EPSG%3A900913@geojson/{0}/{1}/{2}.{3}";
+        private string urlPoint = "http://167.205.7.235:8080/geoserver/gwc/service/tms/1.0.0/mapproject%3Abdg_planet_osm_point@EPSG%3A900913@geojson/{0}/{1}/{2}.{3}";
         private int zoom = 18;
 
         private float centerMercatorX;
@@ -27,7 +29,6 @@ namespace DigipetServer
         private float centerPosY;
 
         private HttpClient http;
-        //private dynamic completeMapData;
         private ListMapData listMapData;
         private bool mapReady;
 
@@ -45,24 +46,18 @@ namespace DigipetServer
             this.centerPosX = float.MinValue;
             this.centerPosY = float.MinValue;
 
-            // check if using proxy
-            //Console.WriteLine(string.Equals(System.Net.WebRequest.DefaultWebProxy.GetProxy(new Uri("http://cache.itb.ac.id:8080")), "http://cache.itb.ac.id:8080"));
-            //if (string.Equals(System.Net.WebRequest.DefaultWebProxy.GetProxy(new Uri("http://cache.itb.ac.id:8080")), "http://cache.itb.ac.id:8080"))
-            //{
-                //Console.WriteLine("masuk");
-                //HttpClientHandler handler = new HttpClientHandler();
-                //WebProxy proxy = new WebProxy("http://cache.itb.ac.id:8080");
-                //proxy.Credentials = new NetworkCredential("gentry.swanri", "70569875");
-                //handler.Proxy = proxy;
-                //handler.UseProxy = true;
-                //this.http = new HttpClient(handler);
-            //}else
-            //{
-                //Console.WriteLine("else not proxy");
-                this.http = new HttpClient();
-            //}
+            /* if using ITB proxy use this http initialization
+             * 
+            HttpClientHandler handler = new HttpClientHandler();
+            WebProxy proxy = new WebProxy("http://cache.itb.ac.id:8080");
+            proxy.Credentials = new NetworkCredential("", "");
+            handler.Proxy = proxy;
+            handler.UseProxy = true;
+            this.http = new HttpClient(handler);
+            */
 
-            //this.completeMapData = null;
+            this.http = new HttpClient();
+            
             this.listMapData = new ListMapData();
             this.listMapData.listBuildingData = new List<BuildingData>();
             this.listMapData.listRoadData = new List<RoadData>();
@@ -109,18 +104,27 @@ namespace DigipetServer
 
         public async void CreateMap()
         {
-            // http://tile.mapzen.com/mapzen/vector/v1/buildings,roads,pois/14/9685/6207.json?api_key= (for testing purpose)
-            //string url = string.Format(mapzenUrl, "buildings,roads,pois", 14, 9685, 6207, format, mapzenApiKey);
-
             this.mapReady = false;
-            string url = string.Format(mapzenUrl, "buildings,roads,pois", zoom.ToString(), tileX.ToString(), tileY.ToString(), format, mapzenApiKey);
-            dynamic mapData = await this.ProcessMapData(url);
-            
-            this.ConvertBuildingData(mapData.buildings);
-            this.ConvertRoadData(mapData.roads);
-            this.ConvertPOIData(mapData.pois);
 
-            //this.completeMapData = mapData;
+            //access road
+            string urlRequest = string.Format(url, zoom.ToString(), tileX.ToString(), tileY.ToString(), format);
+            dynamic mapData = await this.ProcessMapData(urlRequest);
+            this.ConvertRoadData(mapData, "road");
+
+            //access small road
+            urlRequest = string.Format(urlLine, zoom.ToString(), tileX.ToString(), tileY.ToString(), format);
+            mapData = await this.ProcessMapData(urlRequest);
+            this.ConvertRoadData(mapData, "line");
+
+            //access polygon
+            urlRequest = string.Format(urlPolygon, zoom.ToString(), tileX.ToString(), tileY.ToString(), format);
+            mapData = await this.ProcessMapData(urlRequest);
+            this.ConvertBuildingData(mapData);
+            
+            //acess point
+            urlRequest = string.Format(urlPoint, zoom.ToString(), tileX.ToString(), tileY.ToString(), format);
+            mapData = await this.ProcessMapData(urlRequest);
+            this.ConvertPOIData(mapData);
 
             this.mapReady = true;
         }
@@ -129,6 +133,7 @@ namespace DigipetServer
         {
             var response = await this.http.GetAsync(url);
             var result = await response.Content.ReadAsStringAsync();
+            
             dynamic mapData = JsonConvert.DeserializeObject(result);
 
             return mapData;
@@ -141,56 +146,71 @@ namespace DigipetServer
             for (int i=0; i<building.features.Count; i++)
             {
                 var tempData = building.features[i];
-                if (tempData.geometry.type == "Polygon")
+                if (tempData.properties.building != "")
                 {
-                    BuildingData buildingData = new BuildingData();
-                    buildingData.listCoordinate = new List<Coordinate>();
-
-                    for (int j=0; j<tempData.geometry.coordinates[0].Count; j++)
+                    if (tempData.geometry.type == "Polygon")
                     {
-                        var coordinate = tempData.geometry.coordinates[0][j];
+                        BuildingData buildingData = new BuildingData();
+                        buildingData.listCoordinate = new List<Coordinate>();
+
+                        for (int j = 0; j < tempData.geometry.coordinates[0].Count; j++)
+                        {
+                            var coordinate = tempData.geometry.coordinates[0][j];
+
+                            float tempX = (float)Convert.ToDouble(coordinate[0]) - this.centerMercatorX;
+                            float tempY = (float)Convert.ToDouble(coordinate[1]) - this.centerMercatorY;
+
+                            Coordinate coor = new Coordinate();
+                            coor.latitude = tempX;
+                            coor.longitude = tempY;
+                            buildingData.listCoordinate.Add(coor);
+                        }
+
+                        buildingData.buildingName = tempData.properties.name;
+                        this.listMapData.listBuildingData.Add(buildingData);
+
+                        // add centroid of polygon
+                        BuildingData centroidData = new BuildingData();
+                        centroidData.listCoordinate = new List<Coordinate>();
+
+                        float[] centroid = this.FindCentroid(buildingData.listCoordinate);
+                        Coordinate coorCentroid = new Coordinate();
+                        coorCentroid.latitude = centroid[0];
+                        coorCentroid.longitude = centroid[1];
+                        centroidData.listCoordinate.Add(coorCentroid);
+                        centroidData.buildingName = tempData.properties.name;
+                        this.listMapData.listBuildingData.Add(centroidData);
+                    }
+
+                    if (tempData.geometry.type == "Point")
+                    {
+                        BuildingData buildingData = new BuildingData();
+                        buildingData.listCoordinate = new List<Coordinate>();
+
+                        var coordinate = tempData.geometry.coordinates;
                         float[] mercator = GeoConverter.GeoCoorToMercatorProjection((float)Convert.ToDouble(coordinate[1]), (float)Convert.ToDouble(coordinate[0]));
                         float tempX = mercator[0] - this.centerMercatorX;
                         float tempY = mercator[1] - this.centerMercatorY;
-                        //coordinate[1] = tempX;
-                        //coordinate[0] = tempY;
+                        
                         Coordinate coor = new Coordinate();
                         coor.latitude = tempX;
                         coor.longitude = tempY;
                         buildingData.listCoordinate.Add(coor);
+
+                        buildingData.buildingName = tempData.properties.name;
+                        this.listMapData.listBuildingData.Add(buildingData);
+
                     }
-
-                    //buildingData.buildingName = tempData.properties.name;
-                    this.listMapData.listBuildingData.Add(buildingData);
                 }
-                
-                if (tempData.geometry.type == "Point")
-                {
-                    BuildingData buildingData = new BuildingData();
-                    buildingData.listCoordinate = new List<Coordinate>();
-
-                    var coordinate = tempData.geometry.coordinates;
-                    float[] mercator = GeoConverter.GeoCoorToMercatorProjection((float)Convert.ToDouble(coordinate[1]), (float)Convert.ToDouble(coordinate[0]));
-                    float tempX = mercator[0] - this.centerMercatorX;
-                    float tempY = mercator[1] - this.centerMercatorY;
-                    //coordinate[1] = tempX;
-                    //coordinate[0] = tempY;
-                    Coordinate coor = new Coordinate();
-                    coor.latitude = tempX;
-                    coor.longitude = tempY;
-                    buildingData.listCoordinate.Add(coor);
-
-                    buildingData.buildingName = tempData.properties.name;
-                    this.listMapData.listBuildingData.Add(buildingData);
-                    
-                }
-                
             }
         }
 
-        private void ConvertRoadData(dynamic road)
+        private void ConvertRoadData(dynamic road, string type)
         {
-            this.listMapData.listRoadData.Clear();
+            if (type == "road")
+            {
+                this.listMapData.listRoadData.Clear();
+            }
 
             for (int i=0; i<road.features.Count; i++)
             {
@@ -203,11 +223,10 @@ namespace DigipetServer
                     for (int j = 0; j < tempData.geometry.coordinates.Count; j++)
                     {
                         var coordinate = tempData.geometry.coordinates[j];
-                        float[] mercator = GeoConverter.GeoCoorToMercatorProjection((float)Convert.ToDouble(coordinate[1]), (float)Convert.ToDouble(coordinate[0]));
-                        float tempX = mercator[0] - this.centerMercatorX;
-                        float tempY = mercator[1] - this.centerMercatorY;
-                        //coordinate[1] = tempX;
-                        //coordinate[0] = tempY;
+                        
+                        float tempX = (float)Convert.ToDouble(coordinate[0]) - this.centerMercatorX;
+                        float tempY = (float)Convert.ToDouble(coordinate[1]) - this.centerMercatorY;
+                        
                         Coordinate coor = new Coordinate();
                         coor.latitude = tempX;
                         coor.longitude = tempY;
@@ -235,11 +254,11 @@ namespace DigipetServer
                 buildingData.listCoordinate = new List<Coordinate>();
 
                 var coordinate = tempData.geometry.coordinates;
-                float[] mercator = GeoConverter.GeoCoorToMercatorProjection((float)coordinate[1], (float)coordinate[0]);
-                float tempX = mercator[0] - this.centerMercatorX;
-                float tempY = mercator[1] - this.centerMercatorY;
-                //coordinate[1] = tempX;
-                //coordinate[0] = tempY;
+                //float[] mercator = GeoConverter.GeoCoorToMercatorProjection((float)coordinate[1], (float)coordinate[0]);
+
+                float tempX = (float)Convert.ToDouble(coordinate[0]) - this.centerMercatorX;
+                float tempY = (float)Convert.ToDouble(coordinate[1]) - this.centerMercatorY;
+                
                 Coordinate coor = new Coordinate();
                 coor.latitude = tempX;
                 coor.longitude = tempY;
@@ -252,12 +271,36 @@ namespace DigipetServer
 
         public List<Coordinate> StartRoute(float latitude, float longitude, string destination)
         {
-            RouteManagement route = new RouteManagement(this.centerMercatorX, this.centerMercatorY, latitude, longitude, this.mapzenApiKey, this.http);
+            RouteManagement route = new RouteManagement(this.centerMercatorX, this.centerMercatorY, latitude, longitude, this.http);
             route.StartRouting(destination);
 
             while (!route.GetRoutingDone()) ;
 
             return route.GetFinalRoute();
+        }
+
+        /*
+         * Reference = https://stackoverflow.com/questions/9815699/how-to-calculate-centroid 
+        */
+        private float[] FindCentroid(List<Coordinate> poly)
+        {
+            float accumulatedArea = 0.0f;
+            float centerX = 0.0f;
+            float centerY = 0.0f;
+
+            for (int i = 0, j = poly.Count - 1; i < poly.Count; j = i++)
+            {
+                float temp = poly[i].latitude * poly[j].longitude - poly[j].latitude * poly[i].longitude;
+                accumulatedArea += temp;
+                centerX += (poly[i].latitude + poly[j].latitude) * temp;
+                centerY += (poly[i].longitude + poly[j].longitude) * temp;
+            }
+
+            if (Math.Abs(accumulatedArea) < 1E-7f)
+                return null;  // Avoid division by zero
+
+            accumulatedArea *= 3f;
+            return new float[] { centerX / accumulatedArea, centerY / accumulatedArea };
         }
 
         public void SetPosX(float posX)
@@ -303,13 +346,11 @@ namespace DigipetServer
         public void SetListMapData(ListMapData listMapData)
         {
             this.listMapData = listMapData;
-            //this.completeMapData = completeMapData;
         }
 
         public dynamic GetListMapData()
         {
             return this.listMapData;
-            //return this.completeMapData;
         }
 
         public void SetMapReady(bool mapReady)

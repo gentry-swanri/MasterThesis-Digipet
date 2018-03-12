@@ -41,17 +41,7 @@ public class CameraController : MonoBehaviour {
     // Update is called once per frame
     void Update()
     {
-        //this.transform.localRotation = Input.gyro.attitude * rotQuat;
         this.transform.localRotation = Quaternion.Slerp(this.transform.localRotation, Input.gyro.attitude * rotQuat, Time.deltaTime * 2.0f);
-        //this.transform.localRotation = Quaternion.Slerp(this.transform.localRotation, new Quaternion(-Input.gyro.attitude.x, -Input.gyro.attitude.y, Input.gyro.attitude.z, Input.gyro.attitude.w), Time.deltaTime * 60f);
-        //float tempZ = this.transform.eulerAngles.z;
-        //this.transform.Rotate(0,0,-tempZ);
     }
 
 }
-
-//----------------------------------------------------------------------- References --------------------------------------------------------------------------
-
-// http://answers.unity3d.com/questions/1101792/how-to-post-process-a-webcamtexture-in-realtime.html
-// http://www.had2know.com/technology/rgb-to-gray-scale-converter.html
-// https://gist.github.com/petecleary/b63acc149b618c0d08041e06f5bf915c => compass unity tutorial

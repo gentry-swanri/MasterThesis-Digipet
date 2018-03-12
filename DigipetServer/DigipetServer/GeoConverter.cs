@@ -15,10 +15,6 @@ namespace DigipetServer
 
         public static float[] GeoCoorToMercatorProjection(float latitude, float longitude)
         {
-            //float n = Mathf.Pow(2, zoom);
-            //float x = n * ((longitude + 180) / 360);
-            //float y = n * (1 - (Mathf.Log(Mathf.Tan(latitude * Mathf.PI / 180) + (1 / Mathf.Cos(latitude * Mathf.PI / 180))) / Mathf.PI)) / 2;
-
             float x = (float)(longitude * originShift / 180);
             float y = (float)(Math.Log(Math.Tan((90 + latitude) * Math.PI / 360)) / (Math.PI / 180));
             y = (float)(y * originShift / 180);
@@ -35,7 +31,7 @@ namespace DigipetServer
         {
             float res = (float)(initialResolution / (Math.Pow(2, zoom)));
             float x = (mercatorProjection[0] + originShift) / res;
-            float y = (-1 * mercatorProjection[1] + originShift) / res;
+            float y = (mercatorProjection[1] + originShift) / res;
 
             float[] pixelLocation = new float[2];
             pixelLocation[0] = x;

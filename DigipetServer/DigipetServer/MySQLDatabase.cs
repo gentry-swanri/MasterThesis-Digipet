@@ -125,10 +125,6 @@ namespace DigipetServer
         {
             int affected = -1;
 
-            //string lowerFirstName = firstName.ToLower();
-            //string lowerLastName = lastName.ToLower();
-            //string lowerUsername = username.ToLower();
-
             int count = this.Count("user", "username='" + username + "'" );
             if (count == 0)
             {
@@ -184,24 +180,6 @@ namespace DigipetServer
 
                 reader.Close();
                 this.CloseConnection();
-
-                /*
-                // update status since last_modified and calculate age
-                DateTime created_at_datetime = Convert.ToDateTime(created_at);
-                DateTime last_modified_datetime = Convert.ToDateTime(last_modified);
-                DateTime currentTime = DateTime.Now;
-
-                TimeSpan rangeUpdate = currentTime.Subtract(last_modified_datetime);
-                int age = currentTime.Year - created_at_datetime.Year;
-
-                int totalReduce = (int)rangeUpdate.TotalHours * 5;
-
-                energy -= totalReduce;
-                hunger += totalReduce;
-                fun -= totalReduce;
-                hygiene -= totalReduce;
-                environment -= totalReduce;
-                */
 
                 data.Add(heart);
                 data.Add(money);
@@ -280,7 +258,6 @@ namespace DigipetServer
         public string FindEmail(string username)
         {
             string email = "";
-            //int id = FindUserId(username);
             string query = "SELECT email FROM User WHERE username='" + username + "'";
             if (this.OpenConnection())
             {

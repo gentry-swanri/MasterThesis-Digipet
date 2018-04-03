@@ -22,11 +22,11 @@ namespace DigipetServer
 
             ConnectionFactory factory = new ConnectionFactory();
             //factory.HostName = "localhost";
-            factory.HostName = "167.205.7.226";
+            factory.HostName = "";
             factory.Port = 5672;
-            factory.UserName = "ARmachine";
-            factory.Password = "12345";
-            factory.VirtualHost = "/ARX";
+            factory.UserName = "";
+            factory.Password = "";
+            factory.VirtualHost = "";
             
             using (var connection = factory.CreateConnection())
             using (var channel = connection.CreateModel())
